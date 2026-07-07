@@ -245,3 +245,29 @@ Our model at 7 core parameters + 11 conversion factors is at the simpler end of 
 ## Relationship to trade.leadbatteries.org
 
 Hugo Smith's tool at trade.leadbatteries.org is a BACI trade data explorer — it shows what crossed borders. Our model estimates what happened inside the country. The trade explorer can tell you Ghana exported 25,000 t of refined lead. Our model tells you that ~24,000 t came from secondary smelting fed by domestic collection plus imported waste batteries, and ~12% of the feedstock is untracked. Different tools, complementary purposes.
+
+## Publishing updates (public repo)
+
+This repo (`PbAction`) is the **private working repo** — it keeps the full
+research history, calibration sweeps, Monte-Carlo runs, and scraped data, and is
+not shared. The **public** app lives at
+[`blsavonen-gdi/pb-action-portal`](https://github.com/blsavonen-gdi/pb-action-portal),
+checked out locally at `../PbAction-public`. It contains only the ~44 files the
+running Streamlit app needs (~40 MB) and is the source Streamlit Community Cloud
+deploys from.
+
+To release changes after editing the app here:
+
+```bash
+python scripts/build_public_repo.py ../PbAction-public --push
+```
+
+That script (`scripts/build_public_repo.py`) copies the keep-set (defined by an
+explicit manifest at the top of the file), prunes the orphan `regional_map.py`,
+excludes research scratch, then commits and pushes the public repo. Streamlit
+Cloud auto-redeploys on push to `main`. Omit `--push` to sync files only.
+
+**When you add a new tab, module, or data file to the app, add it to the manifest
+(`FILES` / `DIRS`) in `scripts/build_public_repo.py`** — otherwise it won't reach
+the public repo and the deployed app will break on a missing import/file. The
+script prints a warning and exits non-zero if any manifest entry is missing.
