@@ -1,0 +1,141 @@
+country,year,value_metric_t,footnote,yearbook_year,commodity_category_used,commodity,unit_original,unit_converted,n_source_rows,source_file
+Argentina,2015,8000,e,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-argentina.xlsx
+Argentina,2016,8000,e,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-argentina.xlsx
+Argentina,2017,10000,e,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-Argentina-ert.xlsx
+Australia,2015,182258,,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2019-australia.xls
+Australia,2016,182830,,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2019-australia.xls
+Australia,2017,168300,,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2020-21-australia.xlsx
+Australia,2018,155482,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-australia.xlsx
+Australia,2019,89999,r,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2023-australia.xlsx
+Australia,2020,133879,,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-australia.xlsx
+Australia,2021,137903,r,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-australia.xlsx
+Australia,2022,143978,r,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2023-australia.xlsx
+Australia,2023,186458,,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2023-australia.xlsx
+Bolivia,2015,459,,2019,refined_primary,"Lead > Refinery, primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-bolivia.xlsx
+Bolivia,2016,41,,2019,refined_primary,"Lead > Refinery, primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-bolivia.xlsx
+Bolivia,2017,1160,,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-Bolivia-advrel.xlsx
+Bolivia,2018,635,,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-Bolivia-advrel.xlsx
+Bolivia,2019,551,r,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2020-21-Bolivia-advrel.xlsx
+Bolivia,2020,186,,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-Bolivia-advrel.xlsx
+Bolivia,2021,326,,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-Bolivia-advrel.xlsx
+Bulgaria,2017,56000,e,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-Bulgaria-advrel.xlsx
+Bulgaria,2018,71697,r,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Bulgaria-advrel.xlsx
+Bulgaria,2019,71595,r,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Bulgaria-advrel.xlsx
+Bulgaria,2020,72992,r,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Bulgaria-advrel.xlsx
+Bulgaria,2021,71822,r,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Bulgaria-advrel.xlsx
+Bulgaria,2022,69709,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-Bulgaria-advrel.xlsx
+Burma,2015,600,,2019,refined_primary,"Lead > Refinery, primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2019-burma.xlsx
+Burma,2016,5900,,2019,refined_primary,"Lead > Refinery, primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2019-burma.xlsx
+Burma,2017,12000,,2019,refined_primary,"Lead > Refinery, primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2019-burma.xlsx
+Burma,2018,12000,,2019,refined_primary,"Lead > Refinery, primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2019-burma.xlsx
+Burma,2019,12000,,2019,refined_primary,"Lead > Refinery, primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2019-burma.xlsx
+Canada,2015,127264,,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-canada.xlsx
+Canada,2016,142076,,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-canada.xlsx
+Canada,2017,124555,,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-canada.xlsx
+Canada,2018,120000,e,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-canada.xlsx
+Canada,2019,112909,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-canada.xlsx
+Canada,2020,54000,e,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-canada.xlsx
+Canada,2021,59000,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-canada.xlsx
+Canada,2022,42000,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-canada.xlsx
+China,2015,2870000,,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",corrected_x1000_China_footnote,8,myb3-2019-china.xlsx
+China,2016,3017000,,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",corrected_x1000_China_footnote,6,myb3-2019-china.xlsx
+China,2017,2649000,,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",corrected_x1000_China_footnote,6,myb3-2020-21-china.xlsx
+China,2018,2691000,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",corrected_x1000_China_footnote,8,myb3-2022-china.xlsx
+China,2019,2734000,,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",corrected_x1000_China_footnote,8,myb3-2023-china.xlsx
+China,2020,2800000,e,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",corrected_x1000_China_footnote,6,myb3-2023-china.xlsx
+China,2021,2750000,,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",corrected_x1000_China_footnote,6,myb3-2023-china.xlsx
+China,2022,2806000,,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",corrected_x1000_China_footnote,4,myb3-2023-china.xlsx
+China,2023,2925000,,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",corrected_x1000_China_footnote,2,myb3-2023-china.xlsx
+Germany,2015,125000,,2019,refined_primary,"Lead, refinery > Primary","Thousand metric tons, gross weight, unless otherwise specified",converted_from_thousand_t,3,myb3-2019-germany.xlsx
+Germany,2016,115000,,2019,refined_primary,"Lead, refinery > Primary","Thousand metric tons, gross weight, unless otherwise specified",converted_from_thousand_t,3,myb3-2019-germany.xlsx
+Germany,2017,113000,,2020,refined_primary,"Lead, refinery > Primary","Thousand metric tons, gross weight, unless otherwise specified",converted_from_thousand_t,3,myb3-2020-21-Germany-advrel.xlsx
+Germany,2018,98000,,2022,refined_primary,"Lead, refinery > Primary","Thousand metric tons, gross weight, unless otherwise specified",converted_from_thousand_t,4,myb3-2022-Germany-adv.xlsx
+Germany,2019,103000,,2022,refined_primary,"Lead, refinery > Primary","Thousand metric tons, gross weight, unless otherwise specified",converted_from_thousand_t,3,myb3-2022-Germany-adv.xlsx
+Germany,2020,141000,,2022,refined_primary,"Lead, refinery > Primary","Thousand metric tons, gross weight, unless otherwise specified",converted_from_thousand_t,2,myb3-2022-Germany-adv.xlsx
+Germany,2021,93000,,2022,refined_primary,"Lead, refinery > Primary","Thousand metric tons, gross weight, unless otherwise specified",converted_from_thousand_t,2,myb3-2022-Germany-adv.xlsx
+Germany,2022,35000,,2022,refined_primary,"Lead, refinery > Primary","Thousand metric tons, gross weight, unless otherwise specified",converted_from_thousand_t,1,myb3-2022-Germany-adv.xlsx
+India,2015,143000,,2017,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2017-18-India.xlsx
+India,2016,134000,,2017,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2017-18-India.xlsx
+India,2017,165122,,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-india.xlsx
+India,2018,195055,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-india.xlsx
+India,2019,184901,,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,5,myb3-2023-India-ERT.xlsx
+India,2020,200000,,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2023-India-ERT.xlsx
+India,2021,202968,,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2023-India-ERT.xlsx
+India,2022,205770,r,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-India-ERT.xlsx
+India,2023,217275,,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2023-India-ERT.xlsx
+Iran,2015,30000,r,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-iran.xlsx
+Iran,2016,22000,r,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-iran.xlsx
+Iran,2017,29000,,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-iran.xlsx
+Iran,2018,25000,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-iran.xlsx
+Iran,2019,25000,,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2023-iran.xlsx
+Iran,2020,23400,,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-iran.xlsx
+Iran,2021,24800,,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-iran.xlsx
+Iran,2022,30000,,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2023-iran.xlsx
+Iran,2023,29000,,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2023-iran.xlsx
+Italy,2015,52100,,2019,refined_primary,"Lead, refinery > Primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-italy.xlsx
+Italy,2016,47300,,2019,refined_primary,"Lead, refinery > Primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-italy.xlsx
+Italy,2017,30400,,2020,refined_primary,"Lead, refinery > Primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-Italy-advrel.xlsx
+Italy,2018,32900,,2022,refined_primary,"Lead, refinery > Primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-Italy-ert.xlsx
+Italy,2019,32700,,2022,refined_primary,"Lead, refinery > Primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-Italy-ert.xlsx
+Italy,2020,36400,,2022,refined_primary,"Lead, refinery > Primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Italy-ert.xlsx
+Italy,2021,29400,r,2022,refined_primary,"Lead, refinery > Primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Italy-ert.xlsx
+Italy,2022,26000,,2022,refined_primary,"Lead, refinery > Primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-Italy-ert.xlsx
+Japan,2015,85655,,2019,refined_primary,"Lead, refinery > Primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-japan.xlsx
+Japan,2016,84660,,2019,refined_primary,"Lead, refinery > Primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-japan.xlsx
+Japan,2017,87366,,2020,refined_primary,"Lead, refinery > Primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-japan.xlsx
+Japan,2018,78223,,2022,refined_primary,"Lead, refinery > Primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-Japan-ert.xlsx
+Japan,2019,82098,,2022,refined_primary,"Lead, refinery > Primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-Japan-ert.xlsx
+Japan,2020,80304,,2022,refined_primary,"Lead, refinery > Primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Japan-ert.xlsx
+Japan,2021,80600,,2022,refined_primary,"Lead, refinery > Primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Japan-ert.xlsx
+Japan,2022,81000,,2022,refined_primary,"Lead, refinery > Primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-Japan-ert.xlsx
+Kazakhstan,2017,130000,,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-kazakhstan.xlsx
+Kazakhstan,2018,132000,e,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-kazakhstan.xlsx
+Kazakhstan,2019,115000,e,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-kazakhstan.xlsx
+Kazakhstan,2020,112000,e,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-kazakhstan.xlsx
+Kazakhstan,2021,105000,e,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-kazakhstan.xlsx
+Kazakhstan,2022,106000,,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2023-kazakhstan.xlsx
+Kazakhstan,2023,101497,,2023,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2023-kazakhstan.xlsx
+Mexico,2015,263772,,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-mexico.xlsx
+Mexico,2016,94725,,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-mexico.xlsx
+Mexico,2017,92535,,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-mexico.xlsx
+Mexico,2018,104100,e,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-mexico.xlsx
+Mexico,2019,119000,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-mexico.xlsx
+Mexico,2020,112000,e,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-mexico.xlsx
+Mexico,2021,120000,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-mexico.xlsx
+Mexico,2022,109000,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-mexico.xlsx
+North Korea,2018,2000,,2022,refined_primary,"Lead > Refinery, primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-North_Korea-ert.xlsx
+North Korea,2019,3000,,2022,refined_primary,"Lead > Refinery, primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-North_Korea-ert.xlsx
+North Korea,2020,3000,,2022,refined_primary,"Lead > Refinery, primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-North_Korea-ert.xlsx
+North Korea,2021,3000,,2022,refined_primary,"Lead > Refinery, primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-North_Korea-ert.xlsx
+North Korea,2022,3000,,2022,refined_primary,"Lead > Refinery, primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-North_Korea-ert.xlsx
+Peru,2015,1494,,2019,refined_primary,"Lead > Refinery, primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-peru.xlsx
+Poland,2015,40000,,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-poland.xlsx
+Poland,2016,40000,,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2019-poland.xlsx
+Poland,2017,41000,,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-Poland-advrel.xlsx
+Poland,2018,40000,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-Poland-ert.xlsx
+Poland,2019,48000,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-Poland-ert.xlsx
+Poland,2020,40800,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Poland-ert.xlsx
+Poland,2021,39000,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Poland-ert.xlsx
+Poland,2022,36000,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-Poland-ert.xlsx
+Republic Of Korea,2015,291000,,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-south-korea.xlsx
+Republic Of Korea,2016,441000,,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-south-korea.xlsx
+Republic Of Korea,2017,423320,,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2019-south-korea.xlsx
+Republic Of Korea,2018,410295,r,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2019-south-korea.xlsx
+Republic Of Korea,2019,404000,,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2019-south-korea.xlsx
+Romania,2015,1300,,2015,refined_primary,"Lead, refined > Primary",Metric tons unless otherwise specified,metric_tonnes,2,myb3-2015-rom.xls
+Romania,2016,1300,,,refined_primary,"Lead, refinery production > Primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-216-ro.xlsx
+Sweden,2015,26200,r,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-sweden.xlsx
+Sweden,2016,28400,r,2019,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-sweden.xlsx
+Sweden,2017,28300,,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-Sweden-advrel.xlsx
+Sweden,2018,28900,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-Sweden-ert.xlsx
+Sweden,2019,25900,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-Sweden-ert.xlsx
+Sweden,2020,27900,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Sweden-ert.xlsx
+Sweden,2021,27100,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Sweden-ert.xlsx
+Sweden,2022,29000,,2022,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-Sweden-ert.xlsx
+United Kingdom,2015,149000,r,2019,refined_primary,"Lead, refinery > Primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-united-kingdom.xlsx
+United Kingdom,2016,170000,r,2019,refined_primary,"Lead, refinery > Primary","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-united-kingdom.xlsx
+United Kingdom,2017,227000,r,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-United Kingdom-advrel.xlsx
+United Kingdom,2018,226000,r,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-United Kingdom-advrel.xlsx
+United Kingdom,2019,229000,r,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2020-21-United Kingdom-advrel.xlsx
+United Kingdom,2020,197000,,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-United Kingdom-advrel.xlsx
+United Kingdom,2021,200000,e,2020,refined_primary,Lead > Refinery > Primary,"Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-United Kingdom-advrel.xlsx

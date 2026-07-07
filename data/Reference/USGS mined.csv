@@ -1,0 +1,295 @@
+country,year,value_metric_t,footnote,yearbook_year,commodity_category_used,commodity,unit_original,unit_converted,n_source_rows,source_file
+Argentina,2015,29834,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-argentina.xlsx
+Argentina,2016,28016,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-argentina.xlsx
+Argentina,2017,40135,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-Argentina-ert.xlsx
+Argentina,2018,28260,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-Argentina-ert.xlsx
+Argentina,2019,42957,r,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2020-21-Argentina-ert.xlsx
+Argentina,2020,23008,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-Argentina-ert.xlsx
+Argentina,2021,17098,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-Argentina-ert.xlsx
+Australia,2015,653488,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-australia.xls
+Australia,2016,441338,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-australia.xls
+Australia,2017,395190,r,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-australia.xlsx
+Australia,2018,446571,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-australia.xlsx
+Australia,2019,500985,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2023-australia.xlsx
+Australia,2020,494271,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-australia.xlsx
+Australia,2021,485487,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-australia.xlsx
+Australia,2022,437825,r,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2023-australia.xlsx
+Australia,2023,472242,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2023-australia.xlsx
+Bolivia,2015,75273,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-bolivia.xlsx
+Bolivia,2016,89510,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-bolivia.xlsx
+Bolivia,2017,111566,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-Bolivia-advrel.xlsx
+Bolivia,2018,112047,r,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-Bolivia-advrel.xlsx
+Bolivia,2019,88341,r,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2020-21-Bolivia-advrel.xlsx
+Bolivia,2020,64619,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-Bolivia-advrel.xlsx
+Bolivia,2021,93246,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-Bolivia-advrel.xlsx
+Brazil,2015,9440,,2019,mine_production_pb_content,"Lead > Mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-brazil.xlsx
+Brazil,2016,8134,,2019,mine_production_pb_content,"Lead > Mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-brazil.xlsx
+Brazil,2017,6862,,2020,mine_production_pb_content,"Lead > Mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-Brazil-ERT.xlsx
+Brazil,2018,7000,e,2020,mine_production_pb_content,"Lead > Mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-Brazil-ERT.xlsx
+Brazil,2019,5715,r,2020,mine_production_pb_content,"Lead > Mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2020-21-Brazil-ERT.xlsx
+Brazil,2020,5352,,2020,mine_production_pb_content,"Lead > Mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-Brazil-ERT.xlsx
+Brazil,2021,6307,,2020,mine_production_pb_content,"Lead > Mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-Brazil-ERT.xlsx
+Bulgaria,2015,18700,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-bulgaria.xlsx
+Bulgaria,2016,23600,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-bulgaria.xlsx
+Bulgaria,2017,31600,r,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-Bulgaria-advrel.xlsx
+Bulgaria,2018,26532,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-Bulgaria-advrel.xlsx
+Bulgaria,2019,35453,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-Bulgaria-advrel.xlsx
+Bulgaria,2020,37146,r,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Bulgaria-advrel.xlsx
+Bulgaria,2021,35160,r,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Bulgaria-advrel.xlsx
+Bulgaria,2022,40926,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-Bulgaria-advrel.xlsx
+Burkina Faso,2015,1100,e,2019,mine_production_pb_content,"Lead, mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-burkina-faso.xlsx
+Burma,2015,13600,e,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-burma.xlsx
+Burma,2016,14000,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-burma.xlsx
+Burma,2017,20900,e,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-burma.xlsx
+Burma,2018,38200,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-Burma-ert.xlsx
+Burma,2019,37800,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-Burma-ert.xlsx
+Burma,2020,23200,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Burma-ert.xlsx
+Burma,2021,26100,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Burma-ert.xlsx
+Burma,2022,26000,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-Burma-ert.xlsx
+Canada,2015,3699,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-canada.xlsx
+Canada,2016,12020,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-canada.xlsx
+Canada,2017,13494,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-canada.xlsx
+Canada,2018,15605,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-canada.xlsx
+Canada,2019,21782,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-canada.xlsx
+Canada,2020,4000,e,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-canada.xlsx
+Canada,2021,10000,e,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-canada.xlsx
+Canada,2022,6000,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-canada.xlsx
+Chile,2015,2979,,2019,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,3,myb3-2019-chile.xlsx
+Chile,2016,1110,,2019,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,3,myb3-2019-chile.xlsx
+Chile,2017,1562,,2020,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,3,myb3-2020-21-Chile-advrel.xlsx
+Chile,2018,712000,,2020,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,converted_from_thousand_t,3,myb3-2020-21-Chile-advrel.xlsx
+Chile,2019,7000,,2020,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,converted_from_thousand_t,2,myb3-2020-21-Chile-advrel.xlsx
+Chile,2020,1386,,2020,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,1,myb3-2020-21-Chile-advrel.xlsx
+Chile,2021,382000,,2020,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,converted_from_thousand_t,1,myb3-2020-21-Chile-advrel.xlsx
+China,2015,2335000,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",corrected_x1000_China_footnote,4,myb3-2019-china.xlsx
+China,2016,2338000,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",corrected_x1000_China_footnote,3,myb3-2019-china.xlsx
+China,2017,2032000,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",corrected_x1000_China_footnote,3,myb3-2020-21-china.xlsx
+China,2018,1976000,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",corrected_x1000_China_footnote,4,myb3-2022-china.xlsx
+China,2019,2006000,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",corrected_x1000_China_footnote,4,myb3-2023-china.xlsx
+China,2020,1942000,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",corrected_x1000_China_footnote,3,myb3-2023-china.xlsx
+China,2021,1964000,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",corrected_x1000_China_footnote,3,myb3-2023-china.xlsx
+China,2022,1946000,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",corrected_x1000_China_footnote,2,myb3-2023-china.xlsx
+China,2023,1966000,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",corrected_x1000_China_footnote,1,myb3-2023-china.xlsx
+Cuba,2017,3000,r,2020,mine_production_pb_content,"Lead, mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-cuba.xlsx
+Cuba,2018,24000,,2022,mine_production_pb_content,"Lead, mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-cuba.xlsx
+Cuba,2019,35000,,2023,mine_production_pb_content,"Lead, mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2023-cuba.xlsx
+Cuba,2020,34000,,2023,mine_production_pb_content,"Lead, mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-cuba.xlsx
+Cuba,2021,29000,,2023,mine_production_pb_content,"Lead, mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-cuba.xlsx
+Cuba,2022,33000,,2023,mine_production_pb_content,"Lead, mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2023-cuba.xlsx
+Cuba,2023,35000,,2023,mine_production_pb_content,"Lead, mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2023-cuba.xlsx
+Finland,2019,937000,,2022,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,converted_from_thousand_t,2,myb3-2022-Finland-advrel.xlsx
+Finland,2020,1530,,2022,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,2,myb3-2022-Finland-advrel.xlsx
+Finland,2021,1494,,2022,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,2,myb3-2022-Finland-advrel.xlsx
+Finland,2022,1535,,2022,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,1,myb3-2022-Finland-advrel.xlsx
+Greece,2015,9200,,2019,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,4,myb3-2019-greece.xlsx
+Greece,2016,11300,,2019,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,3,myb3-2019-greece.xlsx
+Greece,2017,8700,,2020,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,3,myb3-2020-21-greece.xlsx
+Greece,2018,8800,r,2020,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,3,myb3-2020-21-greece.xlsx
+Greece,2019,10500,,2020,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,2,myb3-2020-21-greece.xlsx
+Greece,2020,13800,,2020,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,1,myb3-2020-21-greece.xlsx
+Greece,2021,16000,e,2020,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,1,myb3-2020-21-greece.xlsx
+India,2015,136000,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-india.xlsx
+India,2016,147000,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-india.xlsx
+India,2017,175633,r,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-india.xlsx
+India,2018,192496,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-india.xlsx
+India,2019,202974,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,5,myb3-2023-India-ERT.xlsx
+India,2020,197527,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2023-India-ERT.xlsx
+India,2021,219117,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2023-India-ERT.xlsx
+India,2022,211844,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-India-ERT.xlsx
+India,2023,220795,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2023-India-ERT.xlsx
+Indonesia,2015,5000,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2019-indonesia.xlsx
+Indonesia,2016,5000,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2019-indonesia.xlsx
+Indonesia,2017,8000,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-indonesia.xlsx
+Indonesia,2018,11000,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-indonesia.xlsx
+Indonesia,2019,11000,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2023-indonesia.xlsx
+Indonesia,2020,8000,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-indonesia.xlsx
+Indonesia,2021,8000,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-indonesia.xlsx
+Indonesia,2022,5000,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2023-indonesia.xlsx
+Indonesia,2023,6400,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2023-indonesia.xlsx
+Iran,2015,40800,,2017,mine_production_pb_content,"Lead > Mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2017-18-iran.xlsx
+Iran,2016,47000,r,2017,mine_production_pb_content,"Lead > Mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2017-18-iran.xlsx
+Iran,2017,48000,,2020,mine_production_pb_content,"Lead > Mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2020-21-iran.xlsx
+Iran,2018,48000,,2022,mine_production_pb_content,"Lead > Mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-iran.xlsx
+Iran,2019,52000,r,2023,mine_production_pb_content,"Lead > Mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-iran.xlsx
+Iran,2020,52000,,2023,mine_production_pb_content,"Lead > Mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-iran.xlsx
+Iran,2021,58000,r,2023,mine_production_pb_content,"Lead > Mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-iran.xlsx
+Iran,2022,58000,r,2023,mine_production_pb_content,"Lead > Mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2023-iran.xlsx
+Iran,2023,60000,,2023,mine_production_pb_content,"Lead > Mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2023-iran.xlsx
+Ireland,2015,31300,,2019,mine_production_pb_content,"Lead > Mine, Pb content",metric tons,metric_tonnes,4,myb3-2019-ireland.xlsx
+Ireland,2016,19600,,2019,mine_production_pb_content,"Lead > Mine, Pb content",metric tons,metric_tonnes,3,myb3-2019-ireland.xlsx
+Ireland,2017,17083,,2020,mine_production_pb_content,"Lead > Mine, Pb content",metric tons,metric_tonnes,3,myb3-2020-21-Ireland-advrel.xlsx
+Ireland,2018,16712,,2022,mine_production_pb_content,"Lead > Mine, Pb content",metric tons,metric_tonnes,4,myb3-2022-Ireland-adv.xlsx
+Ireland,2019,16100,,2022,mine_production_pb_content,"Lead > Mine, Pb content",metric tons,metric_tonnes,3,myb3-2022-Ireland-adv.xlsx
+Ireland,2020,14401,,2022,mine_production_pb_content,"Lead > Mine, Pb content",metric tons,metric_tonnes,2,myb3-2022-Ireland-adv.xlsx
+Ireland,2021,13192,,2022,mine_production_pb_content,"Lead > Mine, Pb content",metric tons,metric_tonnes,2,myb3-2022-Ireland-adv.xlsx
+Ireland,2022,14181,,2022,mine_production_pb_content,"Lead > Mine, Pb content",metric tons,metric_tonnes,1,myb3-2022-Ireland-adv.xlsx
+Kazakhstan,2015,40700,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-kazakhstan.xlsx
+Kazakhstan,2016,70500,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-kazakhstan.xlsx
+Kazakhstan,2017,111200,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-kazakhstan.xlsx
+Kazakhstan,2018,86500,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-kazakhstan.xlsx
+Kazakhstan,2019,55700,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2023-kazakhstan.xlsx
+Kazakhstan,2020,30200,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-kazakhstan.xlsx
+Kazakhstan,2021,29900,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2023-kazakhstan.xlsx
+Kazakhstan,2022,30000,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2023-kazakhstan.xlsx
+Kazakhstan,2023,45900,,2023,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2023-kazakhstan.xlsx
+Kosovo,2015,5500,,2016,mine_production_pb_content,"Lead, mine production > Concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,5,myb3-2016-kv.xlsx
+Kosovo,2016,6500,,2016,mine_production_pb_content,"Lead, mine production > Concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2016-kv.xlsx
+Laos,2015,200,r,2019,mine_production_pb_content,"Lead, mine, Pb contente,",kilograms,converted_from_kg,3,myb3-2019-laos.xlsx
+Laos,2016,230,r,2019,mine_production_pb_content,"Lead, mine, Pb contente,",kilograms,converted_from_kg,2,myb3-2019-laos.xlsx
+Laos,2017,660,,2020,mine_production_pb_content,"Lead, mine, Pb contente,",kilograms,converted_from_kg,3,myb3-2020-21-laos.xlsx
+Laos,2018,340,,2022,mine_production_pb_content,"Lead, mine, Pb contente,",kilograms,converted_from_kg,4,myb3-2022-Laos-ert.xlsx
+Laos,2019,250,,2022,mine_production_pb_content,"Lead, mine, Pb contente,",kilograms,converted_from_kg,3,myb3-2022-Laos-ert.xlsx
+Laos,2020,100,,2022,mine_production_pb_content,"Lead, mine, Pb contente,",kilograms,converted_from_kg,2,myb3-2022-Laos-ert.xlsx
+Laos,2021,170,,2022,mine_production_pb_content,"Lead, mine, Pb contente,",kilograms,converted_from_kg,2,myb3-2022-Laos-ert.xlsx
+Laos,2022,190,,2022,mine_production_pb_content,"Lead, mine, Pb contente,",kilograms,converted_from_kg,1,myb3-2022-Laos-ert.xlsx
+Macedonia,2015,28698,,2017,mine_production_pb_content,"Lead, mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2017-18-mk.xls
+Macedonia,2016,23487,,2017,mine_production_pb_content,"Lead, mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2017-18-mk.xls
+Macedonia,2017,24823,,2017,mine_production_pb_content,"Lead, mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2017-18-mk.xls
+Macedonia,2018,32100,e,2017,mine_production_pb_content,"Lead, mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2017-18-mk.xls
+Mexico,2015,263772,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-mexico.xlsx
+Mexico,2016,241271,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-mexico.xlsx
+Mexico,2017,243022,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-mexico.xlsx
+Mexico,2018,240304,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-mexico.xlsx
+Mexico,2019,259457,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-mexico.xlsx
+Mexico,2020,260390,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-mexico.xlsx
+Mexico,2021,272231,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-mexico.xlsx
+Mexico,2022,273000,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-mexico.xlsx
+Mongolia,2017,7000,,2020,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,1,myb3-2020-21-mongolia.xlsx
+Mongolia,2018,11000,,2022,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,2,myb3-2022-mongolia.xlsx
+Mongolia,2019,12000,e,2023,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,3,myb3-2023-mongolia.xlsx
+Mongolia,2020,12000,e,2023,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,3,myb3-2023-mongolia.xlsx
+Mongolia,2021,11200,,2023,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,3,myb3-2023-mongolia.xlsx
+Mongolia,2022,12200,,2023,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,2,myb3-2023-mongolia.xlsx
+Mongolia,2023,8000,,2023,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,1,myb3-2023-mongolia.xlsx
+Montenegro,2015,3476,,2019,mine_production_pb_content,"Lead, mine, Pb content","Metric tons, gross weight",metric_tonnes,3,myb3-2019-montenegro.xlsx
+Montenegro,2016,5188,,2019,mine_production_pb_content,"Lead, mine, Pb content","Metric tons, gross weight",metric_tonnes,3,myb3-2019-montenegro.xlsx
+Montenegro,2017,3113,r,2020,mine_production_pb_content,"Lead, mine, Pb content","Metric tons, gross weight",metric_tonnes,3,myb3-2020-21-montenegro.xlsx
+Montenegro,2018,3099,,2022,mine_production_pb_content,"Lead, mine, Pb content","Metric tons, gross weight",metric_tonnes,4,myb3-2022-Montenegro-advrel.xlsx
+Montenegro,2019,3480,,2022,mine_production_pb_content,"Lead, mine, Pb content","Metric tons, gross weight",metric_tonnes,3,myb3-2022-Montenegro-advrel.xlsx
+Montenegro,2020,636,,2022,mine_production_pb_content,"Lead, mine, Pb content","Metric tons, gross weight",metric_tonnes,2,myb3-2022-Montenegro-advrel.xlsx
+Montenegro,2021,2000,e,2022,mine_production_pb_content,"Lead, mine, Pb content","Metric tons, gross weight",metric_tonnes,2,myb3-2022-Montenegro-advrel.xlsx
+Montenegro,2022,1928,,2022,mine_production_pb_content,"Lead, mine, Pb content","Metric tons, gross weight",metric_tonnes,1,myb3-2022-Montenegro-advrel.xlsx
+Morocco,2017,38041,,2020,mine_production_pb_content,"Lead > Mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-morocco.xlsx
+Morocco,2018,30382,,2022,mine_production_pb_content,"Lead > Mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Morocco-advrel.xlsx
+Morocco,2019,30000,e,2022,mine_production_pb_content,"Lead > Mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Morocco-advrel.xlsx
+Morocco,2020,38000,e,2022,mine_production_pb_content,"Lead > Mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Morocco-advrel.xlsx
+Morocco,2021,42300,e,2022,mine_production_pb_content,"Lead > Mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Morocco-advrel.xlsx
+Morocco,2022,36000,,2022,mine_production_pb_content,"Lead > Mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-Morocco-advrel.xlsx
+Namibia,2015,9300,,2016,mine_production_pb_content,"Lead, mine production, including lead-zinc concentrates > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2016-wa.xls
+Namibia,2016,7500,,2016,mine_production_pb_content,"Lead, mine production, including lead-zinc concentrates > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2016-wa.xls
+Nigeria,2015,8000,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-nigeria.xlsx
+Nigeria,2016,13000,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-nigeria.xlsx
+Nigeria,2017,21000,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-Nigeria-advrel.xlsx
+Nigeria,2018,18000,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-Nigeria-advrel.xlsx
+Nigeria,2019,24000,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2020-21-Nigeria-advrel.xlsx
+Nigeria,2020,20000,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-Nigeria-advrel.xlsx
+Nigeria,2021,40000,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-Nigeria-advrel.xlsx
+North Korea,2015,35000,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2019-north-korea.xlsx
+North Korea,2016,42000,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2019-north-korea.xlsx
+North Korea,2017,35000,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2020-21-north-korea.xlsx
+North Korea,2018,30000,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-North_Korea-ert.xlsx
+North Korea,2019,26000,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-North_Korea-ert.xlsx
+North Korea,2020,20000,r,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-North_Korea-ert.xlsx
+North Korea,2021,20000,r,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-North_Korea-ert.xlsx
+North Korea,2022,22000,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-North_Korea-ert.xlsx
+North Macedonia,2015,28698,,2019,mine_production_pb_content,"Lead, mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2019-north-macedonia.xlsx
+North Macedonia,2016,23487,,2019,mine_production_pb_content,"Lead, mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2019-north-macedonia.xlsx
+North Macedonia,2017,24820,,2020,mine_production_pb_content,"Lead, mine, concentrate, Pb content",kilograms,converted_from_kg,2,myb3-2020-21-North Macedonia-advrel.xlsx
+North Macedonia,2018,32140,,2022,mine_production_pb_content,"Lead, mine, concentrate, Pb content",kilograms,converted_from_kg,3,myb3-2022-North_Macedonia-advrel.xlsx
+North Macedonia,2019,33700,,2022,mine_production_pb_content,"Lead, mine, concentrate, Pb content",kilograms,converted_from_kg,3,myb3-2022-North_Macedonia-advrel.xlsx
+North Macedonia,2020,35000,,2022,mine_production_pb_content,"Lead, mine, concentrate, Pb content",kilograms,converted_from_kg,2,myb3-2022-North_Macedonia-advrel.xlsx
+North Macedonia,2021,33400,,2022,mine_production_pb_content,"Lead, mine, concentrate, Pb content",kilograms,converted_from_kg,2,myb3-2022-North_Macedonia-advrel.xlsx
+North Macedonia,2022,32600,,2022,mine_production_pb_content,"Lead, mine, concentrate, Pb content",kilograms,converted_from_kg,1,myb3-2022-North_Macedonia-advrel.xlsx
+Pakistan,2016,1280,e,2019,mine_production_pb_content,"Lead > Mine, concentrates > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-pakistan.xlsx
+Pakistan,2017,3250,e,2020,mine_production_pb_content,"Lead > Mine, concentrates > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,5,myb3-2020-21-pakistan.xlsx
+Pakistan,2018,5140,e,2022,mine_production_pb_content,"Lead > Mine, concentrates > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,7,myb3-2022-Pakistan-ert.xlsx
+Pakistan,2019,8630,e,2022,mine_production_pb_content,"Lead > Mine, concentrates > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,6,myb3-2022-Pakistan-ert.xlsx
+Pakistan,2020,7094,,2022,mine_production_pb_content,"Lead > Mine, concentrates > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-Pakistan-ert.xlsx
+Pakistan,2021,7277,,2022,mine_production_pb_content,"Lead > Mine, concentrates > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-Pakistan-ert.xlsx
+Pakistan,2022,8866,,2022,mine_production_pb_content,"Lead > Mine, concentrates > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Pakistan-ert.xlsx
+Peru,2015,315525,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-peru.xlsx
+Peru,2016,314422,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-peru.xlsx
+Peru,2017,306794,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-Peru-advrel.xlsx
+Peru,2018,289195,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-Peru-advrel.xlsx
+Peru,2019,308116,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2020-21-Peru-advrel.xlsx
+Peru,2020,241548,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-Peru-advrel.xlsx
+Peru,2021,264162,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-Peru-advrel.xlsx
+Poland,2015,29000,,2019,mine_production_pb_content,"Lead > Mine, Pb content > From copper o","Metric tons, gross weight, unless otherwise specified",metric_tonnes,8,myb3-2019-poland.xlsx
+Poland,2016,26060,,2019,mine_production_pb_content,"Lead > Mine, Pb content > From copper o","Metric tons, gross weight, unless otherwise specified",metric_tonnes,5,myb3-2019-poland.xlsx
+Poland,2017,12706,,2020,mine_production_pb_content,"Lead > Mine, Pb content > From lead-zinc o","Metric tons, gross weight, unless otherwise specified",metric_tonnes,6,myb3-2020-21-Poland-advrel.xlsx
+Poland,2018,13234,,2022,mine_production_pb_content,"Lead > Mine, Pb content > From lead-zinc o","Metric tons, gross weight, unless otherwise specified",metric_tonnes,8,myb3-2022-Poland-ert.xlsx
+Poland,2019,20156,,2022,mine_production_pb_content,"Lead > Mine, Pb content > From lead-zinc o","Metric tons, gross weight, unless otherwise specified",metric_tonnes,6,myb3-2022-Poland-ert.xlsx
+Poland,2020,18727,,2022,mine_production_pb_content,"Lead > Mine, Pb content > From lead-zinc o","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-Poland-ert.xlsx
+Portugal,2015,3077,,2017,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,1,myb3-2017-18-portugal.xlsx
+Portugal,2016,4126,,2017,mine_production_pb_content,"Lead, mine, Pb content",thousand metric tons,kept_as_mt_mislabelled_thousands,1,myb3-2017-18-portugal.xlsx
+Portugal,2017,5164,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2020-21-Portugal-advrel.xlsx
+Portugal,2018,18397,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-Portugal-ert.xlsx
+Portugal,2019,27852,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Portugal-ert.xlsx
+Portugal,2020,28178,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Portugal-ert.xlsx
+Portugal,2021,30067,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Portugal-ert.xlsx
+Portugal,2022,30000,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-Portugal-ert.xlsx
+Republic Of Korea,2015,2921,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-south-korea.xlsx
+Republic Of Korea,2016,2839,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-south-korea.xlsx
+Republic Of Korea,2017,3762,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2019-south-korea.xlsx
+Republic Of Korea,2018,2341,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2019-south-korea.xlsx
+Republic Of Korea,2019,1933,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2019-south-korea.xlsx
+Russia,2015,171200,r,2016,mine_production_pb_content,"Lead > Mine production, recoverable, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2016-rs.xls
+Russia,2016,170000,e,2016,mine_production_pb_content,"Lead > Mine production, recoverable, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2016-rs.xls
+Serbia,2015,2400,,2016,mine_production_pb_content,"Lead > Mine production, ore, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2016-rb.xlsx
+Serbia,2016,9000,,2016,mine_production_pb_content,"Lead > Mine production, ore, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2016-rb.xlsx
+South Africa,2015,34573,,2019,mine_production_pb_content,"Lead > Mine, Pb content, concentrat","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-south-africa.xlsx
+South Africa,2016,39344,,2019,mine_production_pb_content,"Lead > Mine, Pb content, concentrat","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-south-africa.xlsx
+South Africa,2017,48150,,2020,mine_production_pb_content,"Lead > Mine, Pb content, concentrat","Metric tons, gross weight unless otherwise specified",metric_tonnes,3,myb3-2020-21-south-africa.xlsx
+South Africa,2018,35118,,2022,mine_production_pb_content,"Lead > Mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-south-africa (2).xlsx
+South Africa,2019,42936,,2022,mine_production_pb_content,"Lead > Mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-south-africa (2).xlsx
+South Africa,2020,28048,,2022,mine_production_pb_content,"Lead > Mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-south-africa (2).xlsx
+South Africa,2021,31224,,2022,mine_production_pb_content,"Lead > Mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-south-africa (2).xlsx
+South Africa,2022,39974,,2022,mine_production_pb_content,"Lead > Mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-south-africa (2).xlsx
+Spain,2015,1598,r,2019,mine_production_pb_content,"Lead > Mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-spain.xlsx
+Spain,2016,4946,,2019,mine_production_pb_content,"Lead > Mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2019-spain.xlsx
+Spain,2017,3268,,2020,mine_production_pb_content,"Lead > Mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2020-21-Spain-advrel.xlsx
+Spain,2018,9936,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-Spain-ert.xlsx
+Spain,2019,11390,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-Spain-ert.xlsx
+Spain,2020,11397,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-Spain-ert.xlsx
+Spain,2021,11000,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Spain-ert.xlsx
+Spain,2022,9000,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-Spain-ert.xlsx
+Sweden,2015,79354,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2019-sweden.xlsx
+Sweden,2016,76066,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-sweden.xlsx
+Sweden,2017,71112,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-Sweden-advrel.xlsx
+Sweden,2018,64751,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-Sweden-ert.xlsx
+Sweden,2019,68635,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-Sweden-ert.xlsx
+Sweden,2020,65402,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Sweden-ert.xlsx
+Sweden,2021,65404,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-Sweden-ert.xlsx
+Sweden,2022,70339,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-Sweden-ert.xlsx
+Tajikistan,2015,36000,r,2016,mine_production_pb_content,"Lead, mine output, concentrate > Pb content of o","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2016-ti.xlsx
+Tajikistan,2016,51000,,2016,mine_production_pb_content,"Lead, mine output, concentrate > Pb content of o","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2016-ti.xlsx
+Tajikistan,2017,68900,,2020,mine_production_pb_content,"Lead, mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2020-21-tajikistan.xlsx
+Tajikistan,2018,59300,,2020,mine_production_pb_content,"Lead, mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2020-21-tajikistan.xlsx
+Tajikistan,2019,86771,,2023,mine_production_pb_content,"Lead, mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2023-tajikistan.xlsx
+Tajikistan,2020,54863,,2023,mine_production_pb_content,"Lead, mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2023-tajikistan.xlsx
+Tajikistan,2021,48058,,2023,mine_production_pb_content,"Lead, mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2023-tajikistan.xlsx
+Tajikistan,2022,47510,,2023,mine_production_pb_content,"Lead, mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2023-tajikistan.xlsx
+Tajikistan,2023,37809,,2023,mine_production_pb_content,"Lead, mine, concentrate > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2023-tajikistan.xlsx
+United Kingdom,2015,100,r,2017,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2017-18_United_Kingdom.xlsx
+United Kingdom,2016,100,r,2017,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2017-18_United_Kingdom.xlsx
+United Kingdom,2017,100,,2020,mine_production_pb_content,"Lead > Mine, Pb contente,","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2020-21-United Kingdom-advrel.xlsx
+United Kingdom,2018,100,,2020,mine_production_pb_content,"Lead > Mine, Pb contente,","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2020-21-United Kingdom-advrel.xlsx
+United Kingdom,2019,200,,2020,mine_production_pb_content,"Lead > Mine, Pb contente,","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-United Kingdom-advrel.xlsx
+United Kingdom,2020,100,,2020,mine_production_pb_content,"Lead > Mine, Pb contente,","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-United Kingdom-advrel.xlsx
+United Kingdom,2021,100,,2020,mine_production_pb_content,"Lead > Mine, Pb contente,","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2020-21-United Kingdom-advrel.xlsx
+Uzbekistan,2015,3000,,2019,mine_production_pb_content,"Lead, mine, Pb content",kilograms,converted_from_kg,1,myb3-2019-uzbekistan.xlsx
+Uzbekistan,2016,5000,,2019,mine_production_pb_content,"Lead, mine, Pb content",kilograms,converted_from_kg,1,myb3-2019-uzbekistan.xlsx
+Uzbekistan,2017,26000,r,2020,mine_production_pb_content,"Lead, mine, Pb content",kilograms,converted_from_kg,2,myb3-2020-21-uzbekistan.xlsx
+Uzbekistan,2018,21300,,2022,mine_production_pb_content,"Lead, mine, Pb content",kilograms,converted_from_kg,3,myb3-2022-uzbekistan.xlsx
+Uzbekistan,2019,19100,,2022,mine_production_pb_content,"Lead, mine, Pb content",kilograms,converted_from_kg,3,myb3-2022-uzbekistan.xlsx
+Uzbekistan,2020,18400,,2022,mine_production_pb_content,"Lead, mine, Pb content",kilograms,converted_from_kg,2,myb3-2022-uzbekistan.xlsx
+Uzbekistan,2021,18630,,2022,mine_production_pb_content,"Lead, mine, Pb content",kilograms,converted_from_kg,2,myb3-2022-uzbekistan.xlsx
+Uzbekistan,2022,15430,,2022,mine_production_pb_content,"Lead, mine, Pb content",kilograms,converted_from_kg,1,myb3-2022-uzbekistan.xlsx
+Vietnam,2015,1890,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2019-vietnam.xlsx
+Vietnam,2016,810,,2019,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2019-vietnam.xlsx
+Vietnam,2017,4560,,2020,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2020-21-vietnam.xlsx
+Vietnam,2018,14500,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,4,myb3-2022-vietnam.xlsx
+Vietnam,2019,12400,r,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2022-vietnam.xlsx
+Vietnam,2020,13900,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-vietnam.xlsx
+Vietnam,2021,16600,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2022-vietnam.xlsx
+Vietnam,2022,20600,,2022,mine_production_pb_content,"Lead > Mine, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2022-vietnam.xlsx
