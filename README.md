@@ -135,5 +135,3 @@ See [`LICENSE`](LICENSE).
 
 For questions, access requests, or to schedule a walkthrough, contact Ben Savonen
 at ben.savonen@globaldevincubator.org.
-
-<!-- sync test 19:38:39 -->
