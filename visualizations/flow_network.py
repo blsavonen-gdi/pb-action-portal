@@ -55,6 +55,7 @@ _CAT_COLORS: dict[str, str] = {
     "USED":  "#FDD835",   # 🟨 yellow — Used Batteries
     "SCRAP": "#FB8C00",   # 🟧 orange — Lead Scrap
     "FEED":  "#1E88E5",   # 🟦 blue   — Smelted Lead
+    "ORE":   "#9E9E9E",   # ⬜ grey   — Ore & Concentrates
 }
 
 _CAT_DISPLAY: dict[str, str] = {
@@ -62,6 +63,7 @@ _CAT_DISPLAY: dict[str, str] = {
     "BATT":  "New Batteries (BATT)",
     "USED":  "Used Batteries (USED)",
     "SCRAP": "Lead Scrap (SCRAP)",
+    "ORE":   "Ore & Concentrates (ORE)",
 }
 
 # ── Country label abbreviations (BACI names) ──────────────────────────────────

@@ -11,7 +11,8 @@ build/
 # Claude Code local settings
 .claude/
 
-# Environment
+# Secrets — NEVER commit the real Streamlit secrets (service-account key lives here)
+.streamlit/secrets.toml
 .env
 .venv/
 venv/
@@ -20,43 +21,5 @@ venv/
 .DS_Store
 Thumbs.db
 
-# Excel temp/lock files
-~$*.xlsx
-~$*.xls
-
-# Large raw BACI source files (too large for GitHub; keep processed outputs only)
-scripts/HS22/BACI_HS22_Y*.csv
-
-# ── Research scratch / exploratory outputs (not part of the app) ──────────────
-# India calibration sweeps, feasibility studies, Monte-Carlo, reconstruction grids.
-# The app only depends on: india_mass_balance*.py, model_v4.py, model_v5_parallel.py,
-# india_calibration_explorer.py, and a small set of india_* input CSVs.
-india_model/feasibility_*
-india_model/*calibration_grid*
-india_model/*calibration_diagnostics*
-india_model/*_kstock_sweep*
-india_model/*_ktau_grid*
-india_model/*_per_tau_windows*
-india_model/mc_run*
-india_model/montecarlo_*
-india_model/recon_*
-india_model/profile_*
-india_model/pass2_*
-india_model/split_curve_*
-india_model/*_anchor_comparison*
-india_model/*_beta_sweep_*
-india_model/india_calibrated_2018_2023_rev*
-india_model/india_calibration_params_rev*
-india_model/india_calibration_params_balanced*
-india_model/verify_*.py
-
-# Separate exploratory model — not wired into the app
-eu_model/
-
-# Loose research notes dropped at repo root
-*_literature_notes_*.txt
-ghana_port_literature_notes_*.txt
-
-# Excel lock files / stray temp dir
-~$*
-"unvetted data"/
+# Local-only literature submissions fallback (offline dev)
+data/literature_submissions_local.csv

@@ -1,137 +1,55 @@
-# Pb Action — Global Lead Exploratory Portal
+# Pb Action Portal
 
-A Streamlit dashboard developed by the **Partnership for Battery Action (Pb Action)**,
-housed within the Global Development Incubator (GDI). It gives a comprehensive,
-data-driven picture of how lead flows through the global lead-acid battery
-ecosystem — from mining and manufacturing through installation, collection,
-breaking, and secondary smelting.
+The public Streamlit app for the **Partnership for Battery Action (Pb Action / GDI)** —
+a simplified, no-password subset of the internal Pb Action Toolkit.
 
-## What this is
+It presents **one flat level of tabs**:
 
-The portal is the next evolution of the lead trade dashboard, combining a refined
-version of the BACI bilateral trade dataset with new data sources and a novel
-analytical framework. Where a trade dashboard shows *what crossed borders*, this
-tool estimates *what happened inside countries* — and how each country fits into
-the broader global lead ecosystem.
+| Tab | What it shows |
+|-----|---------------|
+| **Trade Map** | Bilateral BACI lead-trade flows on a world map |
+| **Trade Trends** | Time series of imports/exports/production by country |
+| **Trade Relationships** | Flow-network graph of who trades with whom |
+| **Lead Accumulation** | Net lead balance (mining + imports − exports) over time |
+| **Production & Capacity** | Where lead is mined, refined, and where batteries are made |
+| **Recycling Economy Snapshot** | Country recycling-economy overview |
+| **Material Flow (Beta)** | Experimental material-flow Sankey per country |
+| **Literature Stats** | Searchable library of sourced datapoints + a submission form |
 
-It brings together:
+## Easy vs. Advanced mode
 
-- **Trade data** — BACI / UN COMTRADE bilateral flows across 11 lead-related HS
-  codes (2012–2024), with conversion factors applied so all quantities are
-  expressed in tonnes of lead content.
-- **Mining data** — Country-level mine production estimates from USGS and BGS.
-- **Vehicle and fleet data** — Vehicles per 1,000 people by country, used to
-  anchor battery installation estimates.
-- **Collection rates** — Country-specific estimates of the share of end-of-life
-  batteries formally collected (BCI, ILZSG, national studies, regional defaults).
-- **Smelter and facility data** — To be integrated as Battery Index fieldwork matures.
+A **View mode** toggle in the sidebar trades usability for control:
 
-## What's inside
+- **Easy** fixes sensible data assumptions and hides the detailed controls.
+- **Advanced** exposes every input (dataset, sources, time period, Pb-content
+  factors) so you can adjust the model and challenge its assumptions.
 
-The portal includes several analytical tools, each a tab:
-
-- **Country-Level Lead Usage Model** — estimates how lead flows through each stage
-  of the recycling loop for a single country (installation, collection, breaking,
-  secondary smelting, manufacturing). Key parameters (collection rate, battery
-  lifespan, recovery efficiencies) are adjustable in real time. This is the core
-  analytical engine.
-- **Country Comparison** — places multiple countries side by side on a radar chart,
-  with a diagnostics panel that flags imbalances between breaking and smelting,
-  gaps between modeled and observed installation, unexplained feedstock flows, and
-  implied battery shares that deviate from known values.
-- **Estimate Generator** — aggregates key lead statistics across any combination of
-  countries, UN regions, and World Bank income groups.
-- **Trade Flow Maps** — a bilateral country trade map (top partners for a selected
-  product category) and a regional trade view treating UN regions as units.
-- **Supply Chain Sankey** — traces lead through the recycling chain for a single
-  country, from collection and imported waste batteries through breaking and
-  secondary smelting to refined-lead exports and domestic manufacturing.
-- **Supply Chain Provenance** — maps the full upstream supply chain behind a
-  selected end-market country's battery supply.
-
-## The model
-
-The mass balance model at the core of the tool is a process-based, country-level
-material flow analysis (MFA). It tracks lead by mass (tonnes of lead content)
-through five stages of the battery lifecycle: ore processing, smelting,
-manufacturing, installation, and collection/recycling. It estimates each stage
-sequentially, using trade data as the primary observable and country-specific
-parameters to fill gaps. It currently covers 123 countries with individually
-calibrated parameters, with income-group and continent composite defaults for the
-remainder.
-
-See [`CLAUDE.md`](CLAUDE.md) for the full equation set, parameter definitions,
-conversion factors, and diagnostics.
-
-## Running locally
-
-Requires Python 3.10+.
+## Run locally
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 streamlit run streamlit_app.py
 ```
 
-The app then opens at http://localhost:8501. All data it needs ships in this
-repository under `data/` and `india_model/` — no external downloads required.
+No password is required.
 
-### Repository layout
+## Literature Stats submissions → Google Sheet
 
-```
-streamlit_app.py        Main entry point (tabs)
-model/                  Data loading, region maps, shared constants
-visualizations/         One module per tab (maps, radar, Sankey, flow network)
-india_model/            India mass-balance model modules + input data
-data/                   Trade, mining, collection, and reference datasets
-docs/                   Supplementary notes
-```
+The **Submit a new statistic** form on the Literature Stats tab appends each
+submission to a Google Sheet for review.
 
-## Current status and known limitations
+1. Create a Google Cloud service account + JSON key; enable the **Google Sheets API**.
+2. Create a Google Sheet and share it (Editor) with the service account email.
+3. Copy `.streamlit/secrets.toml.example` to `.streamlit/secrets.toml` and fill in
+   the key + sheet id (locally), or paste the same into **App settings → Secrets**
+   on Streamlit Community Cloud.
 
-This portal is a working prototype under active development:
+If the secret isn't configured, the form still works: on submit it offers the
+entry as a CSV download plus a pre-filled email link, so nothing is lost.
 
-- Installation estimates are a lower bound for most LMICs; the current fleet-based
-  method captures SLI batteries only. Industrial battery demand (UPS, telecom,
-  off-grid storage, electric three-wheelers) is significant in lower-income
-  countries but not yet reliably estimated.
-- Collection rates for many countries rely on income-group defaults rather than
-  country-specific data.
-- Informal-sector flows are not directly observable; the model estimates them as
-  residuals but cannot verify them.
-- BACI data lags roughly 18 months; 2023–2024 figures should be treated as preliminary.
-- Smelter-level data is not yet integrated; Battery Index fieldwork will eventually
-  anchor facility-level throughput.
-- Some UI elements are still under development.
+## Relationship to the Toolkit
 
-The model is not designed for precise tonnage — it characterizes market scale and
-structure and flags where recycling may be unsafe.
-
-## Data sources
-
-| Dataset | Source | Coverage |
-|---|---|---|
-| Bilateral trade flows | BACI / CEPII | 2012–2024, 11 HS codes |
-| Mine production | USGS, BGS | 58 countries |
-| Vehicle fleet | World Bank WDI, OICA, IRF | 123 countries |
-| Battery share of lead demand (β) | ILZSG World Lead Factbook 2023 | Key economies |
-| Collection rates | BCI, ILZSG, national studies, regional defaults | 123 countries |
-| Installation anchors | USGS, Pahle India Foundation, SRI Policy Brief 2024 | 7 countries |
-
-## Roadmap
-
-- Complete calibration of installation estimates against ILZSG country-level
-  consumption data.
-- Integrate Battery Index facility-level smelter throughput.
-- Expand the company database and connect it to country-level flows.
-- Improve informal-sector estimation methodology.
-
-## License
-
-See [`LICENSE`](LICENSE).
-
-## Contact
-
-For questions, access requests, or to schedule a walkthrough, contact Ben Savonen
-at ben.savonen@globaldevincubator.org.
+This repo is generated from the private **Pb Action Toolkit**. The Toolkit is the
+sandbox where features mature; the Portal is always a strict subset. Shared code
+(`model/`, `visualizations/`, `literature/`) and the `data/` summaries are copied
+from the Toolkit — edit those upstream, not here.

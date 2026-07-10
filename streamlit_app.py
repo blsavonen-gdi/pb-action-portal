@@ -1,7 +1,10 @@
 """
-streamlit_app.py — Pb Action Mass Balance Model
-Main entry point. Tabs: Overview | Trade Analysis | Trade Trends | Flow Network |
-Production & Capacity | Supply Chain Provenance | Lead Accumulation | Trade Composition.
+streamlit_app.py — Pb Action Portal (public)
+
+The public, no-password Portal: a simplified subset of the Pb Action Toolkit.
+One flat level of tabs (no high-level grouping). A global Easy/Advanced mode
+toggle (sidebar) controls how much is exposed: Easy mode fixes the data
+assumptions and hides the detailed controls; Advanced mode exposes every input.
 """
 
 import streamlit as st
@@ -9,12 +12,11 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 
-from model.data_loader import load_baci, load_smelter_capacity
+from model.data_loader import load_baci, load_smelter_capacity, CATEGORY_MAP
 from visualizations.trade_map import (
     build_total_volume_map, build_bilateral_map, build_bilateral_balance_map,
     build_region_bilateral_map, build_region_balance_map,
 )
-from visualizations.provenance_map import build_provenance_map, get_provenance_tables
 from visualizations.flow_network import build_flow_network
 from visualizations.flow_network_interactive import build_flow_network_html
 import streamlit.components.v1 as components
@@ -22,24 +24,17 @@ from model.regions import REGIONS_ORDERED, REGION_MAP, MAJOR_REGIONS_ORDERED, MA
 from visualizations.lead_accumulation import (
     render_lead_accumulation_tab, HS_META, CATEGORIES_ORDERED, _DEFAULT_OFF,
 )
-from visualizations.trade_composition_map import render_trade_composition_map
 from visualizations.mass_balance_sankey import render_mass_balance_sankey_tab
-from visualizations.india_calibration_explorer_tab import (
-    render_india_calibration_explorer_tab,
-)
-from visualizations.india_v4_tab import render_india_v4_tab
-from india_model.india_mass_balance import (
-    load_india_csvs,
-    build_net_trade as india_build_net_trade,
-    prepare_model_inputs as india_prepare_inputs,
-    forward_model as india_forward_model,
-)
 
 st.set_page_config(
     page_title="Global Lead Analysis Toolkit",
     page_icon="🔋",
     layout="wide",
 )
+
+# ── Unified-app page imports ──────────────────────────
+from literature.app import render as render_literature
+
 
 # ── App-wide category color palette ───────────────────────────────────────────
 # These colors are used consistently across multiselect pills, the provenance
@@ -54,16 +49,8 @@ CAT_COLORS = {
 
 st.markdown("""
 <style>
-/* ── Tab group visual separators ──────────────────────────────────────── */
-/* Tab 6 = Supply Chain Provenance (first of Analytical Tools group)       */
-/* Tab 8 = Trade Composition (first of Experimental group)                 */
-/* Tab 9 = Mass Balance (also Experimental)                                */
-[data-baseweb="tab-list"] button:nth-child(6),
-[data-baseweb="tab-list"] button:nth-child(8) {
-    margin-left: 10px !important;
-    padding-left: 14px !important;
-    border-left: 2px solid rgba(180, 180, 180, 0.5) !important;
-}
+/* ── Tighten the top of the page so the header hugs the top ───────────── */
+.block-container { padding-top: 3.2rem; }
 
 /* ── Product-category multiselect pill colors ─────────────────────────── */
 [data-baseweb="tag"]:has([aria-label*="Ore"]) {
@@ -234,19 +221,32 @@ def _load_usgs_refined() -> pd.DataFrame:
     return pd.concat([rp, rs]).groupby(["country", "year"])["value_metric_t"].sum().reset_index()
 
 
-@st.cache_data(show_spinner=False)
-def _load_india_csvs_cached() -> dict:
-    return load_india_csvs()
-
-
-@st.cache_data(show_spinner=False)
-def _build_india_net_trade_cached(_baci_df: pd.DataFrame) -> tuple:
-    return india_build_net_trade(_baci_df)
 
 
 @st.cache_data(show_spinner=False)
 def _load_mining_refining() -> pd.DataFrame:
-    return pd.read_csv("data/country_year_mining_refining.csv")
+    """Country x year mining/refining panel, built by outer-joining the SEPARATE
+    USGS and BGS extracts. USGS and BGS are NEVER reconciled - each keeps its own
+    column (mined_usgs_t vs mined_bgs_t, etc.). Rows are kept only where some
+    source reports a positive value, for years >= 2012. Replaces the former
+    pre-joined data/country_year_mining_refining.csv."""
+    ref = "data/Reference"
+    vc = ["mined_usgs_t", "mined_bgs_t", "refined_bgs_t",
+          "refined_primary_usgs_t", "refined_secondary_usgs_t"]
+    try:
+        mine = pd.read_csv(f"{ref}/USGS mined.csv", usecols=["country", "year", "value_metric_t"]).rename(columns={"value_metric_t": "mined_usgs_t"})
+        rp = pd.read_csv(f"{ref}/USGS refined_primary.csv", usecols=["country", "year", "value_metric_t"]).rename(columns={"value_metric_t": "refined_primary_usgs_t"})
+        rs = pd.read_csv(f"{ref}/USGS refined_secondary.csv", usecols=["country", "year", "value_metric_t"]).rename(columns={"value_metric_t": "refined_secondary_usgs_t"})
+        bgs = pd.read_csv(f"{ref}/BGS Refined and Smelted.csv", encoding="utf-8-sig")
+    except FileNotFoundError:
+        return pd.DataFrame(columns=["country", "year"] + vc)
+    bm = bgs[bgs["bgs_commodity_trans"] == "lead, mine"][["country_trans", "year", "Mass of Pb"]].rename(columns={"country_trans": "country", "Mass of Pb": "mined_bgs_t"})
+    br = bgs[bgs["bgs_commodity_trans"] == "lead, refined"][["country_trans", "year", "Mass of Pb"]].rename(columns={"country_trans": "country", "Mass of Pb": "refined_bgs_t"})
+    df = mine
+    for other in (bm, br, rp, rs):
+        df = df.merge(other, on=["country", "year"], how="outer")
+    df = df[((df[vc] > 0).any(axis=1)) & (df["year"] >= 2012)]
+    return df[["country", "year"] + vc].sort_values(["country", "year"]).reset_index(drop=True)
 
 
 @st.cache_data(show_spinner="Computing model estimates…")
@@ -317,9 +317,44 @@ def _load_eurostat_collection() -> dict:
     return load_eurostat_collection()
 
 
+# ── UI mode (Easy vs Advanced) ────────────────────────────────────────────────
+# Resolved here (before the data load) using the same deferred-read pattern as
+# the dataset selector: the sidebar toggle writes st.session_state["ui_mode"];
+# this read picks it up on the next rerun. Easy mode fixes a set of data
+# assumptions (HS12 / BGS / 3-year average / default Pb factors) and hides the
+# advanced controls; Advanced mode exposes every input.
+_ui_mode = st.session_state.get("ui_mode", "Easy")
+ADVANCED = _ui_mode == "Advanced"
+
 _dataset = st.session_state.get("baci_dataset", "HS12 (2012–2024)")
-_dataset_key = "hs22" if _dataset.startswith("HS22") else "hs12"
+# Easy mode is always HS12; only Advanced mode honours an HS22 selection.
+_dataset_key = "hs22" if (ADVANCED and _dataset.startswith("HS22")) else "hs12"
 baci_df = _load_baci_cached(_dataset_key)
+
+
+def _sig2(v: float) -> float:
+    """Round a model-derived value to 2 significant figures (UI display)."""
+    import math
+    if v is None or v == 0 or (isinstance(v, float) and math.isnan(v)):
+        return 0.0
+    exp = math.floor(math.log10(abs(v)))
+    factor = 10 ** (exp - 1)
+    return round(v / factor) * factor
+
+
+def _easy_assumptions_footer():
+    """In Easy mode, render the fixed data assumptions in light grey at the
+    bottom of a data tab. No-op in Advanced mode (there the user set these)."""
+    if ADVANCED:
+        return
+    st.markdown(
+        "<p style='color:#9aa0a6;font-size:12px;margin-top:1.6rem;'>"
+        "Data based on: BACI HS12 trade data, BGS mining/refining data, "
+        "3-year averages centered on the target year to reduce noise, and "
+        "standard assumptions on lead content per product."
+        "</p>",
+        unsafe_allow_html=True,
+    )
 
 all_years = sorted(baci_df["Year"].unique().tolist())
 min_year, max_year = all_years[0], all_years[-1]
@@ -356,293 +391,229 @@ if not st.session_state.disclaimer_accepted:
         "contributions: reach out to [ben.savonen@globaldevincubator.org](mailto:ben.savonen@globaldevincubator.org)."
     )
     st.divider()
+    st.markdown("### 🧭 Easy mode vs. Advanced mode")
+    st.write(
+        "Use the **View mode** toggle in the sidebar to switch between two ways of working:\n\n"
+        "- **Easy mode** makes sensible data assumptions for you and hides the detailed "
+        "controls — the fastest way to get a clear, reliable picture.\n"
+        "- **Advanced mode** exposes every input (dataset, data sources, time period, and "
+        "lead-content factors), so you can adjust the model and challenge its underlying "
+        "assumptions.\n\n"
+        "It's a tradeoff between **usability** and **control**: start in Easy mode to get "
+        "oriented, then switch to Advanced when you want to test how the numbers respond."
+    )
+    st.divider()
     if st.button("I understand — enter the app", type="primary"):
         st.session_state.disclaimer_accepted = True
         st.rerun()
     st.stop()
 
-# ── Tab layout ────────────────────────────────────────────────────────────────
-
-_logo_col, _title_col = st.columns([1, 9])
-with _logo_col:
-    st.image("Pb Action Logo - Primary.png", width=90)
-with _title_col:
-    st.title("Global Lead Analysis Toolkit")
-    st.caption(
-        "Partnership for Battery Action (Pb Action / GDI). "
-        "All values in metric tonnes of lead content."
+# ── Compact app header (logo + title on one tight row; shown on every tab) ───
+_hdr_logo, _hdr_txt = st.columns([1, 13], vertical_alignment="center")
+with _hdr_logo:
+    st.image("Pb Action Logo - Primary.png", width=64)
+with _hdr_txt:
+    st.markdown(
+        "<div style='line-height:1.2;margin:0;'>"
+        "<span style='font-size:1.5rem;font-weight:700;'>Global Lead Analysis Toolkit</span><br>"
+        "<span style='color:#888;font-size:0.85rem;'>Partnership for Battery Action "
+        "(Pb Action / GDI) &middot; all values in metric tonnes of lead content</span>"
+        "</div>",
+        unsafe_allow_html=True,
     )
 
-_LIFECYCLE_SVG = """
-<div style="margin: 4px 0 10px 0;">
-<p style="font-size:12px;color:#888;margin:0 0 6px 0;">Lead changes product forms across its lifecycle. These tools track each stage by <em>lead content</em> — the tonnes of lead embedded in each product, not the gross weight.</p>
-<svg viewBox="0 0 810 130" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;max-height:115px;">
-  <defs>
-    <marker id="arr" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto">
-      <polygon points="0 0, 7 2.5, 0 5" fill="#666"/>
-    </marker>
-    <marker id="arr-blue" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto">
-      <polygon points="0 0, 7 2.5, 0 5" fill="#1E88E5"/>
-    </marker>
-  </defs>
+# ── Top navigation (one flat level of tabs) ───────────────────────────────
+_nav_options = ["Trade Map", "Trade Trends", "Trade Relationships", "Lead Accumulation", "Production & Capacity", "Recycling Economy Snapshot", "Material Flow (Beta)", "Literature Stats"]
 
-  <!-- Box 1: Ore & Concentrates -->
-  <rect x="1" y="28" width="118" height="44" rx="5" fill="rgba(158,158,158,0.15)" stroke="#9E9E9E" stroke-width="1.5"/>
-  <text x="60" y="45" text-anchor="middle" font-size="11" font-family="sans-serif" fill="#555">Ore &amp;</text>
-  <text x="60" y="59" text-anchor="middle" font-size="11" font-family="sans-serif" fill="#555">Concentrates</text>
+# The seven data tabs share the same sidebar controls + data prep; Literature
+# Stats is standalone.
+_DATA_TABS = ("Trade Map", "Trade Trends", "Trade Relationships", "Production & Capacity", "Lead Accumulation", "Recycling Economy Snapshot", "Material Flow (Beta)")
 
-  <!-- Arrow 1: Primary Smelting -->
-  <line x1="120" y1="50" x2="165" y2="50" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="143" y="19" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#666">Primary</text>
-  <text x="143" y="30" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#666">Smelting</text>
+# If a persisted selection is no longer valid, fall back to the first tab.
+if st.session_state.get("toolkit_page") not in _nav_options:
+    st.session_state["toolkit_page"] = _nav_options[0]
 
-  <!-- Box 2: Smelted Lead -->
-  <rect x="168" y="28" width="118" height="44" rx="5" fill="rgba(30,136,229,0.12)" stroke="#1E88E5" stroke-width="1.5"/>
-  <text x="227" y="52" text-anchor="middle" font-size="11" font-family="sans-serif" fill="#555">Smelted Lead</text>
+_page = st.segmented_control(
+    "Section",
+    _nav_options,
+    label_visibility="collapsed",
+    key="toolkit_page",
+)
+if not _page:
+    _page = _nav_options[0]
 
-  <!-- Arrow 2: Manufacturing -->
-  <line x1="287" y1="50" x2="332" y2="50" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="310" y="23" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#666">Manu-</text>
-  <text x="310" y="34" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#666">facturing</text>
-
-  <!-- Box 3: New Batteries -->
-  <rect x="335" y="28" width="118" height="44" rx="5" fill="rgba(67,160,71,0.12)" stroke="#43A047" stroke-width="1.5"/>
-  <text x="394" y="45" text-anchor="middle" font-size="11" font-family="sans-serif" fill="#555">New</text>
-  <text x="394" y="59" text-anchor="middle" font-size="11" font-family="sans-serif" fill="#555">Batteries</text>
-
-  <!-- Arrow 3: Use -->
-  <line x1="454" y1="50" x2="499" y2="50" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="477" y="34" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#666">Use</text>
-
-  <!-- Box 4: Used Batteries -->
-  <rect x="502" y="28" width="118" height="44" rx="5" fill="rgba(253,216,53,0.18)" stroke="#F9A825" stroke-width="1.5"/>
-  <text x="561" y="45" text-anchor="middle" font-size="11" font-family="sans-serif" fill="#555">Used</text>
-  <text x="561" y="59" text-anchor="middle" font-size="11" font-family="sans-serif" fill="#555">Batteries</text>
-
-  <!-- Arrow 4: Breaking -->
-  <line x1="621" y1="50" x2="666" y2="50" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="644" y="34" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#666">Breaking</text>
-
-  <!-- Box 5: Lead Scrap -->
-  <rect x="669" y="28" width="118" height="44" rx="5" fill="rgba(251,140,0,0.12)" stroke="#FB8C00" stroke-width="1.5"/>
-  <text x="728" y="52" text-anchor="middle" font-size="11" font-family="sans-serif" fill="#555">Lead Scrap</text>
-
-  <!-- Secondary Smelting arc (Lead Scrap → Smelted Lead, curves below) -->
-  <path d="M 728,72 C 728,113 227,113 227,72" fill="none" stroke="#1E88E5" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-blue)"/>
-  <text x="478" y="126" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#1E88E5">Secondary Smelting</text>
-</svg>
-</div>
-"""
-
-# ── Global sidebar: dataset + time period + year (apply to all tabs) ─────────
+# ── Sidebar: mode toggle first (shown on every tab), then advanced controls ──
 with st.sidebar:
     st.radio(
-        "BACI dataset",
-        options=["HS12 (2012–2024)", "HS22 (2022–2024)"],
-        index=0,
-        key="baci_dataset",
+        "View mode",
+        options=["Easy", "Advanced"],
+        key="ui_mode",
         help=(
-            "HS12 (2012–2024): the full historical dataset using HS 2017 product codes. "
-            "Waste batteries = HS 854810.\n\n"
-            "HS22 (2022–2024): the newer BACI release using HS 2022 product codes. "
-            "Waste batteries = HS 854911 (a reclassified code that separates waste batteries "
-            "more cleanly). Coverage limited to 2022–2024."
+            "Easy mode makes sensible data assumptions for you and hides the "
+            "detailed controls. Advanced mode lets you choose the dataset, data "
+            "sources, time period, and lead-content factors yourself."
         ),
     )
-    st.caption(
-        "HS22 adds a dedicated code for waste batteries (854911), improving classification. "
-        "HS12 offers the full 2012–2024 history. For trend analysis, use HS12."
-    )
-
-    st.divider()
-
-    _mining_source_sel = st.radio(
-        "Mining & refining data",
-        options=["BGS (default)", "USGS"],
-        index=0,
-        key="mining_source",
-        help=(
-            "**BGS** (British Geological Survey): 1971–2023. Covers mine production and "
-            "total refined lead. No primary/secondary split.\n\n"
-            "**USGS** (US Geological Survey Mineral Yearbooks): 2015–2023. Separates "
-            "primary and secondary refined lead.\n\n"
-            "When a country/year is missing from the selected source, the app automatically "
-            "falls back to the other source and shows a note."
-        ),
-    )
-    st.caption(
-        "BGS and USGS use similar methods but sometimes report different figures for the "
-        "same country-year. Try both to check sensitivity — large differences may indicate "
-        "reporting gaps or scope differences."
-    )
-
-    st.divider()
-
-    time_period = st.radio(
-        "Time period",
-        options=["Single year", "3-year average (recommended)"],
-        index=1,
-        help=(
-            "Single year: show model outputs for the selected year only.\n\n"
-            "3-year average: average [year−1, year, year+1], clipped to data range. "
-            "Smooths year-to-year trade volatility."
-        ),
-    )
-
-    _year_label = "Center year" if time_period.startswith("3-year") else "Year"
-    _default_year = min(2022, max_year)
-    year = st.slider(
-        _year_label, min_value=min_year, max_value=max_year, value=_default_year, step=1,
-    )
-
-    if time_period.startswith("3-year"):
-        active_years = [y for y in [year - 1, year, year + 1] if min_year <= y <= max_year]
-        period_label = f"{active_years[0]}–{active_years[-1]} average"
-        st.caption(f"Window: {period_label}")
-    else:
-        active_years = [year]
-        period_label = str(year)
-
-    st.divider()
-
-    with st.expander("Pb content factors", expanded=False):
+    if ADVANCED:
         st.caption(
-            "Lead content fractions applied to BACI trade quantities across all tabs. "
-            "Uncheck a code to exclude it from all calculations."
+            "**Advanced mode** — you control the dataset, data sources, time "
+            "period, and lead-content factors below."
         )
-        _pb_overrides: dict[int, float] = {}
-        _pb_disabled: set[int] = set()
-        for _cat in CATEGORIES_ORDERED:
-            _cat_codes = [(hs, m) for hs, m in HS_META.items() if m["cat"] == _cat]
-            if not _cat_codes:
-                continue
-            st.markdown(f"**{_cat}**")
-            for _hs, _meta in _cat_codes:
-                _chk_col, _ctrl_col = st.columns([5, 4])
-                _default_on = _hs not in _DEFAULT_OFF
-                with _chk_col:
-                    _enabled = st.checkbox(
-                        f"{_hs} — {_meta['name']}",
-                        value=_default_on,
-                        key=f"pb_chk_{_hs}",
-                    )
-                with _ctrl_col:
-                    if not _enabled:
-                        _pb_disabled.add(_hs)
-                        st.caption("excluded")
-                    elif _meta["lo"] < _meta["hi"]:
-                        _val = st.slider(
-                            "Pb fraction",
-                            min_value=float(_meta["lo"]),
-                            max_value=float(_meta["hi"]),
-                            value=float(_meta["default"]),
-                            step=0.005,
-                            format="%.3f",
-                            key=f"pb_factor_{_hs}",
-                            label_visibility="collapsed",
-                        )
-                        _pb_overrides[_hs] = _val
-                    else:
-                        st.caption(f"fixed: {_meta['default']:.0%}")
-            st.divider()
-
-    pb_factors: dict[int, float] = {hs: meta["default"] for hs, meta in HS_META.items()}
-    pb_factors.update(_pb_overrides)
-    for _hs in _pb_disabled:
-        pb_factors[_hs] = 0.0
-
-    _mining_pref: str = "BGS" if _mining_source_sel.startswith("BGS") else "USGS"
-
-
-tab_overview, tab_trade, tab_massbal = st.tabs([
-    "Overview", "Trade Toolkit", "Material Flow Toolkit"
-])
-
-# ── Overview tab ─────────────────────────────────────────────────────────────
-
-with tab_overview:
-    st.markdown(_LIFECYCLE_SVG, unsafe_allow_html=True)
-
-    st.markdown(
-        "Select a toolkit above to begin exploring. "
-        "The **Trade Toolkit** provides direct views into bilateral trade data. "
-        "The **Material Flow Toolkit** builds model-derived estimates of what happens inside each country."
-    )
-    st.write("")
-
-    ov_left, ov_right = st.columns(2)
-
-    with ov_left:
-        with st.container(border=True):
-            st.markdown("#### 🔄 Trade Toolkit")
-            st.caption(
-                "Direct views into BACI bilateral lead trade data, filterable by "
-                "country, year, and product. Use these to explore observed trade flows."
-            )
-            st.markdown(
-                "**Trade Analysis** — Map bilateral lead flows on a world map. "
-                "Filter by product category and direction; click a country to see its "
-                "top trading partners. Includes a regional aggregation view."
-            )
-            st.markdown(
-                "**Trade Trends** — Time-series chart of a country's imports and exports "
-                "by product category from 2012 to the present, with optional YoY % change view."
-            )
-            st.markdown(
-                "**Flow Network** — Sankey-style node-link diagram of bilateral flows "
-                "between selected countries. Arrows are scaled by volume; "
-                "bubble size reflects total trade."
-            )
-            st.markdown(
-                "**Trade Composition** — Color every country's trade portfolio using a "
-                "triangular RYB model (blue = battery inputs, yellow = new batteries, "
-                "red = waste/scrap). Spot structural patterns at a glance."
-            )
-            st.markdown(
-                "**Supply Chain Provenance** — Trace the multi-tier upstream origins of "
-                "a country's battery supply chain across three pathways: battery, "
-                "smelted lead, and scrap/waste."
-            )
-
-    with ov_right:
-        with st.container(border=True):
-            st.markdown("#### ⚖ Material Flow Toolkit")
-            st.caption(
-                "Model-derived estimates built on top of trade and production data. "
-                "These tools estimate what happens inside countries, not just across borders."
-            )
-            st.markdown(
-                "**Production & Capacity** — Choropleth maps showing where lead is mined, "
-                "where it is refined, where batteries are manufactured, and where batteries "
-                "enter service. Logarithmic scale; animated playback available."
-            )
-            st.markdown(
-                "**Recycling Economy Snapshot** — Summary scorecard of a country's "
-                "recycling economy: collection rate, secondary smelting share, "
-                "battery self-sufficiency, and comparison baselines."
-            )
-            st.markdown(
-                "**Lead Accumulation** — A country's annual net lead balance: "
-                "mining + imports − exports, broken down by product category. "
-                "Highlights whether a country is a net lead accumulator or depleter."
-            )
-            st.markdown(
-                "**Process Estimates** — Material-flow Sankey for any country, using "
-                "trade plus mining/refining anchors. Broad coverage, but not reconciled "
-                "against external observations."
-            )
-            st.markdown(
-                "**Mass Balance** _(under construction)_ — Fully reconciled "
-                "material-flow model for a country, calibrated against external "
-                "observations (USGS primary/secondary refining, stock estimates). "
-                "Currently being built out for India; not yet ready for use."
-            )
-
+    else:
+        st.caption(
+            "**Easy mode** makes a number of data assumptions for you (listed in "
+            "grey at the bottom of each tab). Switch to **Advanced** to control "
+            "every input."
+        )
     st.divider()
-    st.caption(
-        "Sidebar controls (left): switch between BACI HS12/HS22 datasets, BGS/USGS "
-        "mining data, and time period. All tabs respond to these selections."
-    )
+
+# ── Data parameters for the trade / material-flow tabs ───────────────────────
+# Advanced mode renders the full control set in the sidebar. Easy mode shows
+# only the year slider (always a 3-year average) and fixes every other input to
+# the recommended assumptions. The Easy-mode pb_factors MUST match what Advanced
+# produces at its default widget states: codes in _DEFAULT_OFF are excluded
+# (factor 0.0), everything else uses its default factor. Any mismatch here makes
+# Easy and Advanced disagree on identical settings across every tab.
+if _page in _DATA_TABS and not ADVANCED:
+    with st.sidebar:
+        _default_year = min(2022, max_year)
+        year = st.slider(
+            "Center year",
+            min_value=min_year, max_value=max_year, value=_default_year, step=1,
+            help="Easy mode always uses a 3-year average centered on this year to reduce noise.",
+        )
+        st.caption(
+            "For some variables we use a 3-year average (centered on this year) to cut "
+            "down on noise in the data. Switch to Advanced mode to hone in on a single year."
+        )
+    _mining_pref = "BGS"
+    time_period = "3-year average (recommended)"
+    active_years = [y for y in [year - 1, year, year + 1] if min_year <= y <= max_year]
+    period_label = f"{active_years[0]}–{active_years[-1]} average"
+    st.sidebar.caption(f"Window: {period_label}")
+    pb_factors = {
+        hs: (0.0 if hs in _DEFAULT_OFF else meta["default"])
+        for hs, meta in HS_META.items()
+    }
+
+if _page in _DATA_TABS and ADVANCED:
+    with st.sidebar:
+        st.radio(
+            "BACI dataset",
+            options=["HS12 (2012–2024)", "HS22 (2022–2024)"],
+            index=0,
+            key="baci_dataset",
+            help=(
+                "HS12 (2012–2024): the full historical dataset using HS 2017 product codes. "
+                "Waste batteries = HS 854810.\n\n"
+                "HS22 (2022–2024): the newer BACI release using HS 2022 product codes. "
+                "Waste batteries = HS 854911 (a reclassified code that separates waste batteries "
+                "more cleanly). Coverage limited to 2022–2024."
+            ),
+        )
+        st.caption(
+            "HS22 adds a dedicated code for waste batteries (854911), improving classification. "
+            "HS12 offers the full 2012–2024 history. For trend analysis, use HS12."
+        )
+
+        st.divider()
+
+        _mining_source_sel = st.radio(
+            "Mining & refining data",
+            options=["BGS (default)", "USGS"],
+            index=0,
+            key="mining_source",
+            help=(
+                "**BGS** (British Geological Survey): 1971–2023. Covers mine production and "
+                "total refined lead. No primary/secondary split.\n\n"
+                "**USGS** (US Geological Survey Mineral Yearbooks): 2015–2023. Separates "
+                "primary and secondary refined lead.\n\n"
+                "When a country/year is missing from the selected source, the app automatically "
+                "falls back to the other source and shows a note."
+            ),
+        )
+        st.caption(
+            "BGS and USGS use similar methods but sometimes report different figures for the "
+            "same country-year. Try both to check sensitivity — large differences may indicate "
+            "reporting gaps or scope differences."
+        )
+
+        st.divider()
+
+        time_period = st.radio(
+            "Time period",
+            options=["Single year", "3-year average (recommended)"],
+            index=1,
+            help=(
+                "Single year: show model outputs for the selected year only.\n\n"
+                "3-year average: average [year−1, year, year+1], clipped to data range. "
+                "Smooths year-to-year trade volatility."
+            ),
+        )
+
+        _year_label = "Center year" if time_period.startswith("3-year") else "Year"
+        _default_year = min(2022, max_year)
+        year = st.slider(
+            _year_label, min_value=min_year, max_value=max_year, value=_default_year, step=1,
+        )
+
+        if time_period.startswith("3-year"):
+            active_years = [y for y in [year - 1, year, year + 1] if min_year <= y <= max_year]
+            period_label = f"{active_years[0]}–{active_years[-1]} average"
+            st.caption(f"Window: {period_label}")
+        else:
+            active_years = [year]
+            period_label = str(year)
+
+        st.divider()
+
+        with st.expander("Pb content factors", expanded=False):
+            st.caption(
+                "Lead content fractions applied to BACI trade quantities across all tabs. "
+                "Uncheck a code to exclude it from all calculations."
+            )
+            _pb_overrides: dict[int, float] = {}
+            _pb_disabled: set[int] = set()
+            for _cat in CATEGORIES_ORDERED:
+                _cat_codes = [(hs, m) for hs, m in HS_META.items() if m["cat"] == _cat]
+                if not _cat_codes:
+                    continue
+                st.markdown(f"**{_cat}**")
+                for _hs, _meta in _cat_codes:
+                    _chk_col, _ctrl_col = st.columns([5, 4])
+                    _default_on = _hs not in _DEFAULT_OFF
+                    with _chk_col:
+                        _enabled = st.checkbox(
+                            f"{_hs} — {_meta['name']}",
+                            value=_default_on,
+                            key=f"pb_chk_{_hs}",
+                        )
+                    with _ctrl_col:
+                        if not _enabled:
+                            _pb_disabled.add(_hs)
+                            st.caption("excluded")
+                        elif _meta["lo"] < _meta["hi"]:
+                            _val = st.slider(
+                                "Pb fraction",
+                                min_value=float(_meta["lo"]),
+                                max_value=float(_meta["hi"]),
+                                value=float(_meta["default"]),
+                                step=0.005,
+                                format="%.3f",
+                                key=f"pb_factor_{_hs}",
+                                label_visibility="collapsed",
+                            )
+                            _pb_overrides[_hs] = _val
+                        else:
+                            st.caption(f"fixed: {_meta['default']:.0%}")
+                st.divider()
+
+        pb_factors: dict[int, float] = {hs: meta["default"] for hs, meta in HS_META.items()}
+        pb_factors.update(_pb_overrides)
+        for _hs in _pb_disabled:
+            pb_factors[_hs] = 0.0
+
+        _mining_pref: str = "BGS" if _mining_source_sel.startswith("BGS") else "USGS"
 
 
 # Category label ↔ internal code mapping (used in Trade Analysis)
@@ -679,7 +650,7 @@ if _dataset_key == "hs22":
     _TT_HS_ALL   = {260700, 780110, 780191, 780199, 780200, 850710, 850720, 850790, 854911, 282410, 282490}
 
 _TT_SERIES_NAMES: list[str] = [
-    "Total Imports", "Total Exports",
+    "Total Lead-Related Imports", "Total Lead-Related Exports",
     "Smelted Lead Imports", "Smelted Lead Exports",
     "Refined Lead Imports", "Refined Lead Exports",
     "Lead Scrap Imports", "Lead Scrap Exports",
@@ -690,8 +661,8 @@ _TT_SERIES_NAMES: list[str] = [
 ]
 
 _TT_SERIES_COLORS: dict[str, str] = {
-    "Total Imports":               "#1f77b4",
-    "Total Exports":               "#ff7f0e",
+    "Total Lead-Related Imports":  "#1f77b4",
+    "Total Lead-Related Exports":  "#ff7f0e",
     "Smelted Lead Imports":        "#2ca02c",
     "Smelted Lead Exports":        "#d62728",
     "Refined Lead Imports":        "#9467bd",
@@ -855,78 +826,62 @@ def _build_display_baci(
 
 
 
-with tab_trade:
-    _t_analysis, _t_trends, _t_flow, _t_comp, _t_prov = st.tabs([
-        "Trade Analysis", "Trade Trends", "Flow Network",
-        "Trade Composition", "Supply Chain Provenance",
-    ])
+if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
 
     # ── Trade Analysis ────────────────────────────────────────────────────────
 
-    with _t_analysis:
+    if _page == "Trade Map":
+        # ── Description ───────────────────────────────────────────────────────
         _ta_desc_col, _ta_lm_col = st.columns([8, 1])
         with _ta_desc_col:
-            st.write(
-                "Explore how lead products move between countries. "
-                "The Country Trade View shows bilateral flows for a selected product and country. "
-                "The Regional Flow View colors countries by UN M49 sub-region and shows which "
-                "regions supply inputs to — or receive outputs from — a selected region."
-            )
+            if ADVANCED:
+                st.write(
+                    "Explore how lead products move between countries and regions. "
+                    "Pick a country or region to see its bilateral trade partners on the map, "
+                    "and choose exactly which HS product codes to include."
+                )
+            else:
+                st.write("Explore the lead-related trade relationships between countries.")
         with _ta_lm_col:
             with st.popover("ℹ Learn more"):
                 st.markdown(
                     "**Data source:** BACI (Base pour l'Analyse du Commerce International), "
                     "published by CEPII. Harmonizes UN Comtrade import and export reports to "
                     "resolve bilateral discrepancies. Values are converted to tonnes of lead "
-                    "content using the Pb fraction factors in the sidebar.\n\n"
-                    "**How it's used:** Each row in BACI represents a bilateral flow "
-                    "(exporter → importer, product, year). This tab aggregates those flows "
-                    "by product category and displays them on a world map."
+                    "content using standard Pb fraction factors.\n\n"
+                    "**How it's used:** Each row in BACI is a bilateral flow "
+                    "(exporter to importer, product, year). This tab aggregates those flows "
+                    "and displays them on a world map.\n\n"
+                    "**Selecting a place:** Choose *All countries* for a total-volume view, or "
+                    "pick a single country or a UN region (regions are listed first, then "
+                    "countries A-Z) to see who trades with it. When a region is selected, only "
+                    "cross-region (external) flows are shown."
                 )
 
-        t3_view = st.radio(
-            "View",
-            options=["Country Trade View", "Regional Flow View"],
+        # ── Place selector: countries + regions in one dropdown ───────────────
+        # Regions (continents, then UN sub-regions) are listed first, then all
+        # countries alphabetically. Selection is dispatched three ways below:
+        # All countries -> total-volume map; a region -> regional maps/tables;
+        # a country -> bilateral maps/tables.
+        _ALL_PLACES = "— All countries (total volume) —"
+        _regions_all = list(MAJOR_REGIONS_ORDERED) + list(REGIONS_ORDERED)
+        _place_options = [_ALL_PLACES] + _regions_all + list(all_baci_countries)
+        place_sel = st.selectbox(
+            "Select a country or region",
+            options=_place_options,
             index=0,
-            horizontal=True,
-            key="t3_view_radio",
+            key="ta_place",
+            help="Regions (continents and UN sub-regions) are listed first, then countries A-Z.",
         )
 
-        st.divider()
+        _is_all = (place_sel == _ALL_PLACES)
+        _is_region = place_sel in _regions_all
+        _is_major = place_sel in MAJOR_REGIONS_ORDERED
+        _region_map = MAJOR_REGION_MAP if _is_major else REGION_MAP
 
-        # ══ Country Trade View ═══════════════════════════════════════════════════════
-        if t3_view == "Country Trade View":
-            map_col1, map_col2 = st.columns([2, 3])
-
-            with map_col1:
-                map_cat_labels = st.multiselect(
-                    "Product categories",
-                    options=_CAT_LABEL_LIST,
-                    default=_CAT_LABEL_LIST,
-                    key="map_categories",
-                    help=(
-                        "New Batteries = HS 850710/850720 | "
-                        "Used Batteries = HS 854810 | "
-                        "Lead Scrap = HS 780200 | "
-                        "Smelted Lead = HS 780110/780191/780199/850790/282410/282490 "
-                        "(unwrought lead alloys; not all forms are technically refined) | "
-                        "Ore & Concentrates = HS 260700. "
-                        "Select multiple to sum Pb quantities across products."
-                    ),
-                )
-                if not map_cat_labels:
-                    map_cat_labels = _CAT_LABEL_LIST
-            map_categories = [_CAT_LABELS[l] for l in map_cat_labels]
-
-            with map_col2:
-                _map_options = ["— All countries (total volume) —"] + all_baci_countries
-                map_inspect = st.selectbox(
-                    "Select country to inspect bilateral trade partners",
-                    options=_map_options,
-                    index=0,
-                    key="map_inspect",
-                )
-
+        # Color-scale mode is an Advanced-only control; Easy mode is always the
+        # default global volume scale.
+        if ADVANCED and not _is_all:
             map_color_mode = st.radio(
                 "Color scale mode",
                 options=["Global volume scale", "Bilateral trade balance"],
@@ -934,366 +889,314 @@ with tab_trade:
                 horizontal=True,
                 key="map_color_mode",
                 help=(
-                    "**Global volume scale**: color by net flow direction, intensity by volume. "
-                    "Vivid = large flow, pale = small flow.\n\n"
-                    "**Bilateral trade balance**: color by the ratio of trade with the selected "
-                    "country, regardless of volume. Two countries with the same color have the "
-                    "same import/export ratio, even if their volumes differ."
+                    "**Global volume scale**: color by net flow direction, intensity by volume.\n\n"
+                    "**Bilateral trade balance**: color by the trade ratio with the selected "
+                    "place, regardless of volume."
                 ),
             )
-
-            display_baci = _build_display_baci(baci_df, active_years, year)
-            _no_country_selected = (map_inspect == "— All countries (total volume) —")
-            _cat_display_label = ", ".join(_strip_cat_emoji(l) for l in map_cat_labels)
-
-            if _no_country_selected:
-                period_note = f"  ({period_label})" if len(active_years) > 1 else ""
-                st.caption(
-                    f"Showing annualised trade volume (imports + exports) per country{period_note}. "
-                    "Select a country above to see its bilateral trade partners."
-                )
-                fig_map = build_total_volume_map(display_baci, year, map_categories, _cat_display_label)
-            else:
-                period_note = f"  ({period_label})" if len(active_years) > 1 else ""
-                if map_color_mode == "Bilateral trade balance":
-                    fig_map = build_bilateral_balance_map(
-                        display_baci, year, map_categories, map_inspect, _cat_display_label
-                    )
-                    st.caption(
-                        f"**Orange**: {map_inspect} is net *receiver* from partner (partner dominates sending).  "
-                        f"**Purple**: {map_inspect} is net *sender* to partner (partner dominates receiving).  "
-                        f"**White**: balanced trade. Color shows ratio regardless of volume — two countries "
-                        f"with the same shade have the same import/export ratio with {map_inspect}, "
-                        f"even if their volumes differ.{period_note}"
-                    )
-                else:
-                    fig_map = build_bilateral_map(
-                        display_baci, year, map_categories, map_inspect, _cat_display_label
-                    )
-                    st.caption(
-                        f"**Green**: partner is net *sender* to {map_inspect}.  "
-                        f"**Red**: partner is net *receiver* from {map_inspect}.  "
-                        f"**White**: balanced flow. Intensity scales with bilateral volume — pale = small flows.{period_note}"
-                    )
-
-            st.plotly_chart(fig_map, use_container_width=True)
-
-            st.divider()
-            _df_cats = display_baci[display_baci["category"].isin(map_categories)]
-
-            if _no_country_selected:
-                # No country selected — gross totals across all trade
-                _exp_t = (
-                    _df_cats.groupby("Exporter")["actual_lead"].sum()
-                    .sort_values(ascending=False).head(30).reset_index()
-                    .rename(columns={"Exporter": "Country", "actual_lead": "Exports (t Pb)"})
-                )
-                _exp_t.insert(0, "#", range(1, len(_exp_t) + 1))
-                _imp_t = (
-                    _df_cats.groupby("Importer")["actual_lead"].sum()
-                    .sort_values(ascending=False).head(30).reset_index()
-                    .rename(columns={"Importer": "Country", "actual_lead": "Imports (t Pb)"})
-                )
-                _imp_t.insert(0, "#", range(1, len(_imp_t) + 1))
-
-                _tc1, _tc2 = st.columns(2)
-                with _tc1:
-                    st.caption(f"Top 30 exporters — {_cat_display_label}")
-                    st.dataframe(_exp_t, hide_index=True, use_container_width=True,
-                                 column_config={"Exports (t Pb)": st.column_config.NumberColumn(format="%d")})
-                with _tc2:
-                    st.caption(f"Top 30 importers — {_cat_display_label}")
-                    st.dataframe(_imp_t, hide_index=True, use_container_width=True,
-                                 column_config={"Imports (t Pb)": st.column_config.NumberColumn(format="%d")})
-            else:
-                # Country selected — bilateral net relative to map_inspect
-                _col_exp = f"Exports to {map_inspect} (t Pb)"
-                _col_imp = f"Imports from {map_inspect} (t Pb)"
-                _sends = _df_cats[_df_cats["Importer"] == map_inspect].groupby("Exporter")["actual_lead"].sum()
-                _gets  = _df_cats[_df_cats["Exporter"] == map_inspect].groupby("Importer")["actual_lead"].sum()
-                _partners = _sends.index.union(_gets.index)
-                _pbil = pd.DataFrame(index=_partners)
-                _pbil.index.name = "Country"
-                _pbil[_col_exp] = _sends.reindex(_partners, fill_value=0)
-                _pbil[_col_imp] = _gets.reindex(_partners, fill_value=0)
-                _pbil["_net"] = _pbil[_col_exp] - _pbil[_col_imp]
-
-                _col_net_exp = f"Net Exports to {map_inspect} (t Pb)"
-                _tbl_exp = (
-                    _pbil[_pbil["_net"] > 0].sort_values("_net", ascending=False).head(30)
-                    .reset_index().rename(columns={"_net": _col_net_exp})
-                )
-                _tbl_exp.insert(0, "#", range(1, len(_tbl_exp) + 1))
-
-                _col_net_imp = f"Net Imports from {map_inspect} (t Pb)"
-                _pbil_neg = _pbil[_pbil["_net"] < 0].copy()
-                _pbil_neg[_col_net_imp] = -_pbil_neg["_net"]
-                _tbl_imp = (
-                    _pbil_neg.sort_values(_col_net_imp, ascending=False).head(30).reset_index()
-                )
-                _tbl_imp.insert(0, "#", range(1, len(_tbl_imp) + 1))
-
-                _tc1, _tc2 = st.columns(2)
-                with _tc1:
-                    st.caption(f"Top 30 net exporters to {map_inspect} — {_cat_display_label}")
-                    st.dataframe(
-                        _tbl_exp[["#", "Country", _col_net_exp, _col_exp, _col_imp]],
-                        hide_index=True, use_container_width=True,
-                        column_config={
-                            _col_exp: st.column_config.NumberColumn(format="%d"),
-                            _col_imp: st.column_config.NumberColumn(format="%d"),
-                            _col_net_exp: st.column_config.NumberColumn(format="%d"),
-                        },
-                    )
-                with _tc2:
-                    st.caption(f"Top 30 net importers from {map_inspect} — {_cat_display_label}")
-                    st.dataframe(
-                        _tbl_imp[["#", "Country", _col_net_imp, _col_imp, _col_exp]],
-                        hide_index=True, use_container_width=True,
-                        column_config={
-                            _col_imp: st.column_config.NumberColumn(format="%d"),
-                            _col_exp: st.column_config.NumberColumn(format="%d"),
-                            _col_net_imp: st.column_config.NumberColumn(format="%d"),
-                        },
-                    )
-
-        # ══ Regional Trade View ══════════════════════════════════════════════════════
         else:
-            rtv_col1, rtv_col2 = st.columns([2, 3])
+            map_color_mode = "Global volume scale"
 
-            with rtv_col1:
-                rtv_cat_labels = st.multiselect(
-                    "Product categories",
-                    options=_CAT_LABEL_LIST,
-                    default=_CAT_LABEL_LIST,
-                    key="rtv_category",
-                    help=(
-                        "New Batteries = HS 850710/850720 | "
-                        "Used Batteries = HS 854810 | "
-                        "Lead Scrap = HS 780200 | "
-                        "Smelted Lead = HS 780110/780191/780199/850790/282410/282490 | "
-                        "Ore & Concentrates = HS 260700"
-                    ),
+        # Map is rendered into this slot AFTER the tick boxes are read, so it
+        # appears above them in the layout while still reflecting their state.
+        _map_slot = st.container()
+
+        # ── Product category / HS-code tick boxes (below the map) ─────────────
+        _code_to_name = {code: _strip_cat_emoji(lbl) for lbl, code in _CAT_LABELS.items()}
+        _present_products = sorted(int(p) for p in baci_df["Product"].dropna().unique())
+
+        if ADVANCED:
+            st.caption("Products to include (by HS code)")
+            _selected_hs: list[int] = []
+            for _cat in CATEGORIES_ORDERED:
+                _codes = [p for p in _present_products if HS_META.get(p, {}).get("cat") == _cat]
+                if not _codes:
+                    continue
+                st.markdown(f"**{_cat}**")
+                _cols = st.columns(3)
+                for _i, _hs in enumerate(_codes):
+                    with _cols[_i % 3]:
+                        if st.checkbox(
+                            f"{_hs} — {HS_META[_hs]['name']}",
+                            value=True,
+                            key=f"ta_hs_{_hs}",
+                        ):
+                            _selected_hs.append(_hs)
+            if not _selected_hs:
+                _selected_hs = list(_present_products)
+        else:
+            st.caption("Product categories to include")
+            _cat_cols = st.columns(len(_CAT_LABEL_LIST))
+            _selected_cats_easy: list[str] = []
+            for _i, _lbl in enumerate(_CAT_LABEL_LIST):
+                with _cat_cols[_i]:
+                    if st.checkbox(_lbl, value=True, key=f"ta_cat_{_CAT_LABELS[_lbl]}"):
+                        _selected_cats_easy.append(_CAT_LABELS[_lbl])
+            if not _selected_cats_easy:
+                _selected_cats_easy = [_CAT_LABELS[l] for l in _CAT_LABEL_LIST]
+            _selected_hs = [p for p in _present_products
+                            if CATEGORY_MAP.get(p) in _selected_cats_easy]
+
+        # Categories present among the selected HS codes (drives the category
+        # filter passed to the map builders + the display label).
+        _cats_present = [c for c in ["BATT", "USED", "SCRAP", "FEED", "ORE"]
+                         if any(CATEGORY_MAP.get(p) == c for p in _selected_hs)]
+        _cat_display_label = ", ".join(_code_to_name[c] for c in _cats_present) or "no products"
+
+        # ── Build map + tables, filtered to the selected HS codes ─────────────
+        display_baci = _build_display_baci(baci_df, active_years, year)
+        _disp_f = display_baci[display_baci["Product"].isin(_selected_hs)]
+        _baci_f = baci_df[baci_df["Product"].isin(_selected_hs)]
+        _period_note = f"  ({period_label})" if len(active_years) > 1 else ""
+
+        with _map_slot:
+            if _is_all:
+                st.caption(
+                    f"Showing annualised trade volume (imports + exports) per country{_period_note}. "
+                    "Select a country or region above to see its trade partners."
                 )
-                if not rtv_cat_labels:
-                    rtv_cat_labels = _CAT_LABEL_LIST
-            rtv_categories = [_CAT_LABELS[l] for l in rtv_cat_labels]
-            rtv_cat_display = ", ".join(_strip_cat_emoji(l) for l in rtv_cat_labels)
-
-            with rtv_col2:
-                rtv_region_options = (
-                    ["— Select a region —"]
-                    + MAJOR_REGIONS_ORDERED
-                    + [_RTV_REGION_SEP]
-                    + REGIONS_ORDERED
-                )
-                rtv_region_sel = st.selectbox(
-                    "Select region",
-                    options=rtv_region_options,
-                    index=0,
-                    key="rtv_region",
-                    help="Choose a UN region (e.g. 'Africa') or a UN sub-region (e.g. 'Western Africa').",
-                )
-
-            _rtv_is_major = rtv_region_sel in MAJOR_REGIONS_ORDERED
-            _rtv_region_map = MAJOR_REGION_MAP if _rtv_is_major else REGION_MAP
-
-            rtv_color_mode = st.radio(
-                "Color scale mode",
-                options=["Global volume scale", "Bilateral trade balance"],
-                index=0,
-                horizontal=True,
-                key="rtv_color_mode",
-                help=(
-                    "**Global volume scale**: color by net flow direction, intensity by volume. "
-                    "Vivid = large flow, pale = small flow.\n\n"
-                    "**Bilateral trade balance**: color by the ratio of trade with the selected "
-                    "region, regardless of volume. Two countries with the same color have the "
-                    "same import/export ratio, even if their volumes differ."
-                ),
-            )
-
-            if rtv_region_sel.startswith("—") or rtv_region_sel == _RTV_REGION_SEP:
-                st.info("Select a UN region or sub-region from the dropdown above to view its trade partners.")
-            else:
-                period_note = f"  ({period_label})" if len(active_years) > 1 else ""
-                if rtv_color_mode == "Bilateral trade balance":
-                    fig_rtv = build_region_balance_map(
-                        baci_df=baci_df,
-                        active_years=active_years,
-                        category=rtv_categories,
-                        selected_region=rtv_region_sel,
-                        region_map=_rtv_region_map,
-                        category_label=rtv_cat_display,
+                _fig = build_total_volume_map(_disp_f, year, _cats_present, _cat_display_label)
+            elif _is_region:
+                if map_color_mode == "Bilateral trade balance":
+                    _fig = build_region_balance_map(
+                        baci_df=_baci_f, active_years=active_years, category=_cats_present,
+                        selected_region=place_sel, region_map=_region_map,
+                        category_label=_cat_display_label,
                     )
                     st.caption(
-                        f"**Orange**: partner is net *sender* to {rtv_region_sel} (partner dominates sending).  "
-                        f"**Purple**: partner is net *receiver* from {rtv_region_sel} (partner dominates receiving).  "
-                        f"**White**: balanced trade.  "
-                        f"<span style='color:#1565C0'>■</span> **Blue**: {rtv_region_sel} countries.{period_note}  "
-                        "Color shows ratio regardless of volume — two countries with the same shade have the same "
-                        f"import/export ratio with {rtv_region_sel}, even if their volumes differ.",
+                        f"**Orange**: partner is net *sender* to {place_sel}.  "
+                        f"**Purple**: partner is net *receiver* from {place_sel}.  "
+                        f"**White**: balanced.  <span style='color:#1565C0'>&#9632;</span> **Blue**: "
+                        f"{place_sel} countries.{_period_note}",
                         unsafe_allow_html=True,
                     )
                 else:
-                    fig_rtv = build_region_bilateral_map(
-                        baci_df=baci_df,
-                        active_years=active_years,
-                        category=rtv_categories,
-                        selected_region=rtv_region_sel,
-                        region_map=_rtv_region_map,
-                        category_label=rtv_cat_display,
+                    _fig = build_region_bilateral_map(
+                        baci_df=_baci_f, active_years=active_years, category=_cats_present,
+                        selected_region=place_sel, region_map=_region_map,
+                        category_label=_cat_display_label,
                     )
                     st.caption(
-                        f"**Green**: partner is net *sender* to {rtv_region_sel}.  "
-                        f"**Red**: partner is net *receiver* from {rtv_region_sel}.  "
-                        f"**White**: balanced flow.  "
-                        f"<span style='color:#1565C0'>■</span> **Blue**: {rtv_region_sel} countries.{period_note}  "
-                        "Intensity scales with bilateral volume — pale = small flows.",
+                        f"**Green**: partner is net *sender* to {place_sel}.  "
+                        f"**Red**: partner is net *receiver* from {place_sel}.  "
+                        f"**White**: balanced.  <span style='color:#1565C0'>&#9632;</span> **Blue**: "
+                        f"{place_sel} countries.{_period_note}",
                         unsafe_allow_html=True,
                     )
-                st.plotly_chart(fig_rtv, use_container_width=True)
-
-                st.divider()
-                _rtv_df = baci_df[baci_df["Year"].isin(active_years) & baci_df["category"].isin(rtv_categories)]
-                _n_yrs = max(len(active_years), 1)
-                _rtv_region_ctries = {c for c, r in _rtv_region_map.items() if r == rtv_region_sel}
-
-                # External flows only — cross-region bilateral relative to selected region
-                _rtv_col_exp = f"Exports to {rtv_region_sel} (t Pb)"
-                _rtv_col_imp = f"Imports from {rtv_region_sel} (t Pb)"
-                _rtv_sends = (
-                    _rtv_df[_rtv_df["Importer"].isin(_rtv_region_ctries)
-                            & ~_rtv_df["Exporter"].isin(_rtv_region_ctries)]
-                    .groupby("Exporter")["actual_lead"].sum() / _n_yrs
-                )
-                _rtv_gets = (
-                    _rtv_df[_rtv_df["Exporter"].isin(_rtv_region_ctries)
-                            & ~_rtv_df["Importer"].isin(_rtv_region_ctries)]
-                    .groupby("Importer")["actual_lead"].sum() / _n_yrs
-                )
-                _rtv_partners = _rtv_sends.index.union(_rtv_gets.index)
-                _rtv_pbil = pd.DataFrame(index=_rtv_partners)
-                _rtv_pbil.index.name = "Country"
-                _rtv_pbil[_rtv_col_exp] = _rtv_sends.reindex(_rtv_partners, fill_value=0)
-                _rtv_pbil[_rtv_col_imp] = _rtv_gets.reindex(_rtv_partners, fill_value=0)
-                _rtv_pbil["_net"] = _rtv_pbil[_rtv_col_exp] - _rtv_pbil[_rtv_col_imp]
-
-                _rtv_col_net_exp = f"Net Exports to {rtv_region_sel} (t Pb)"
-                _rtv_tbl_exp = (
-                    _rtv_pbil[_rtv_pbil["_net"] > 0].sort_values("_net", ascending=False).head(30)
-                    .reset_index().rename(columns={"_net": _rtv_col_net_exp})
-                )
-                _rtv_tbl_exp.insert(0, "#", range(1, len(_rtv_tbl_exp) + 1))
-
-                _rtv_col_net_imp = f"Net Imports from {rtv_region_sel} (t Pb)"
-                _rtv_pbil_neg = _rtv_pbil[_rtv_pbil["_net"] < 0].copy()
-                _rtv_pbil_neg[_rtv_col_net_imp] = -_rtv_pbil_neg["_net"]
-                _rtv_tbl_imp = (
-                    _rtv_pbil_neg.sort_values(_rtv_col_net_imp, ascending=False).head(30).reset_index()
-                )
-                _rtv_tbl_imp.insert(0, "#", range(1, len(_rtv_tbl_imp) + 1))
-
-                _rc1, _rc2 = st.columns(2)
-                with _rc1:
-                    st.caption(f"Top 30 net exporters to {rtv_region_sel} — {rtv_cat_display}")
-                    st.dataframe(
-                        _rtv_tbl_exp[["#", "Country", _rtv_col_net_exp, _rtv_col_exp, _rtv_col_imp]],
-                        hide_index=True, use_container_width=True,
-                        column_config={
-                            _rtv_col_exp: st.column_config.NumberColumn(format="%d"),
-                            _rtv_col_imp: st.column_config.NumberColumn(format="%d"),
-                            _rtv_col_net_exp: st.column_config.NumberColumn(format="%d"),
-                        },
+            else:
+                if map_color_mode == "Bilateral trade balance":
+                    _fig = build_bilateral_balance_map(_disp_f, year, _cats_present, place_sel, _cat_display_label)
+                    st.caption(
+                        f"**Orange**: {place_sel} is net *receiver* from partner.  "
+                        f"**Purple**: {place_sel} is net *sender* to partner.  "
+                        f"**White**: balanced. Color shows ratio regardless of volume.{_period_note}"
                     )
-                with _rc2:
-                    st.caption(f"Top 30 net importers from {rtv_region_sel} — {rtv_cat_display}")
-                    st.dataframe(
-                        _rtv_tbl_imp[["#", "Country", _rtv_col_net_imp, _rtv_col_imp, _rtv_col_exp]],
-                        hide_index=True, use_container_width=True,
-                        column_config={
-                            _rtv_col_imp: st.column_config.NumberColumn(format="%d"),
-                            _rtv_col_exp: st.column_config.NumberColumn(format="%d"),
-                            _rtv_col_net_imp: st.column_config.NumberColumn(format="%d"),
-                        },
+                else:
+                    _fig = build_bilateral_map(_disp_f, year, _cats_present, place_sel, _cat_display_label)
+                    st.caption(
+                        f"**Green**: partner is net *sender* to {place_sel}.  "
+                        f"**Red**: partner is net *receiver* from {place_sel}.  "
+                        f"**White**: balanced. Intensity scales with bilateral volume.{_period_note}"
                     )
+            st.plotly_chart(_fig, use_container_width=True)
 
+        # ── Partner tables ────────────────────────────────────────────────────
+        st.divider()
+        if _is_all:
+            _exp_t = (
+                _disp_f.groupby("Exporter")["actual_lead"].sum()
+                .sort_values(ascending=False).head(30).reset_index()
+                .rename(columns={"Exporter": "Country", "actual_lead": "Exports (t Pb)"})
+            )
+            _exp_t.insert(0, "#", range(1, len(_exp_t) + 1))
+            _imp_t = (
+                _disp_f.groupby("Importer")["actual_lead"].sum()
+                .sort_values(ascending=False).head(30).reset_index()
+                .rename(columns={"Importer": "Country", "actual_lead": "Imports (t Pb)"})
+            )
+            _imp_t.insert(0, "#", range(1, len(_imp_t) + 1))
+            _tc1, _tc2 = st.columns(2)
+            with _tc1:
+                st.caption(f"Top 30 exporters — {_cat_display_label}")
+                st.dataframe(_exp_t, hide_index=True, use_container_width=True,
+                             column_config={"Exports (t Pb)": st.column_config.NumberColumn(format="%d")})
+            with _tc2:
+                st.caption(f"Top 30 importers — {_cat_display_label}")
+                st.dataframe(_imp_t, hide_index=True, use_container_width=True,
+                             column_config={"Imports (t Pb)": st.column_config.NumberColumn(format="%d")})
+        elif _is_region:
+            _n_yrs = max(len(active_years), 1)
+            _region_ctries = {c for c, r in _region_map.items() if r == place_sel}
+            _col_exp = f"Exports to {place_sel} (t Pb)"
+            _col_imp = f"Imports from {place_sel} (t Pb)"
+            _yr_f = _baci_f[_baci_f["Year"].isin(active_years)]
+            _sends = (
+                _yr_f[_yr_f["Importer"].isin(_region_ctries)
+                      & ~_yr_f["Exporter"].isin(_region_ctries)]
+                .groupby("Exporter")["actual_lead"].sum() / _n_yrs
+            )
+            _gets = (
+                _yr_f[_yr_f["Exporter"].isin(_region_ctries)
+                      & ~_yr_f["Importer"].isin(_region_ctries)]
+                .groupby("Importer")["actual_lead"].sum() / _n_yrs
+            )
+            _partners = _sends.index.union(_gets.index)
+            _pbil = pd.DataFrame(index=_partners); _pbil.index.name = "Country"
+            _pbil[_col_exp] = _sends.reindex(_partners, fill_value=0)
+            _pbil[_col_imp] = _gets.reindex(_partners, fill_value=0)
+            _pbil["_net"] = _pbil[_col_exp] - _pbil[_col_imp]
+            _col_net_exp = f"Net Exports to {place_sel} (t Pb)"
+            _tbl_exp = (_pbil[_pbil["_net"] > 0].sort_values("_net", ascending=False).head(30)
+                        .reset_index().rename(columns={"_net": _col_net_exp}))
+            _tbl_exp.insert(0, "#", range(1, len(_tbl_exp) + 1))
+            _col_net_imp = f"Net Imports from {place_sel} (t Pb)"
+            _pn = _pbil[_pbil["_net"] < 0].copy(); _pn[_col_net_imp] = -_pn["_net"]
+            _tbl_imp = _pn.sort_values(_col_net_imp, ascending=False).head(30).reset_index()
+            _tbl_imp.insert(0, "#", range(1, len(_tbl_imp) + 1))
+            _rc1, _rc2 = st.columns(2)
+            with _rc1:
+                st.caption(f"Top 30 net exporters to {place_sel} — {_cat_display_label}")
+                st.dataframe(_tbl_exp[["#", "Country", _col_net_exp, _col_exp, _col_imp]],
+                             hide_index=True, use_container_width=True,
+                             column_config={c: st.column_config.NumberColumn(format="%d")
+                                            for c in (_col_exp, _col_imp, _col_net_exp)})
+            with _rc2:
+                st.caption(f"Top 30 net importers from {place_sel} — {_cat_display_label}")
+                st.dataframe(_tbl_imp[["#", "Country", _col_net_imp, _col_imp, _col_exp]],
+                             hide_index=True, use_container_width=True,
+                             column_config={c: st.column_config.NumberColumn(format="%d")
+                                            for c in (_col_imp, _col_exp, _col_net_imp)})
+        else:
+            _col_exp = f"Exports to {place_sel} (t Pb)"
+            _col_imp = f"Imports from {place_sel} (t Pb)"
+            _sends = _disp_f[_disp_f["Importer"] == place_sel].groupby("Exporter")["actual_lead"].sum()
+            _gets = _disp_f[_disp_f["Exporter"] == place_sel].groupby("Importer")["actual_lead"].sum()
+            _partners = _sends.index.union(_gets.index)
+            _pbil = pd.DataFrame(index=_partners); _pbil.index.name = "Country"
+            _pbil[_col_exp] = _sends.reindex(_partners, fill_value=0)
+            _pbil[_col_imp] = _gets.reindex(_partners, fill_value=0)
+            _pbil["_net"] = _pbil[_col_exp] - _pbil[_col_imp]
+            _col_net_exp = f"Net Exports to {place_sel} (t Pb)"
+            _tbl_exp = (_pbil[_pbil["_net"] > 0].sort_values("_net", ascending=False).head(30)
+                        .reset_index().rename(columns={"_net": _col_net_exp}))
+            _tbl_exp.insert(0, "#", range(1, len(_tbl_exp) + 1))
+            _col_net_imp = f"Net Imports from {place_sel} (t Pb)"
+            _pn = _pbil[_pbil["_net"] < 0].copy(); _pn[_col_net_imp] = -_pn["_net"]
+            _tbl_imp = _pn.sort_values(_col_net_imp, ascending=False).head(30).reset_index()
+            _tbl_imp.insert(0, "#", range(1, len(_tbl_imp) + 1))
+            _tc1, _tc2 = st.columns(2)
+            with _tc1:
+                st.caption(f"Top 30 net exporters to {place_sel} — {_cat_display_label}")
+                st.dataframe(_tbl_exp[["#", "Country", _col_net_exp, _col_exp, _col_imp]],
+                             hide_index=True, use_container_width=True,
+                             column_config={c: st.column_config.NumberColumn(format="%d")
+                                            for c in (_col_exp, _col_imp, _col_net_exp)})
+            with _tc2:
+                st.caption(f"Top 30 net importers from {place_sel} — {_cat_display_label}")
+                st.dataframe(_tbl_imp[["#", "Country", _col_net_imp, _col_imp, _col_exp]],
+                             hide_index=True, use_container_width=True,
+                             column_config={c: st.column_config.NumberColumn(format="%d")
+                                            for c in (_col_imp, _col_exp, _col_net_imp)})
 
 
     # ── Trade Trends ──────────────────────────────────────────────────────────
 
-    with _t_trends:
+    if _page == "Trade Trends":
         _tt_desc_col, _tt_lm_col = st.columns([8, 1])
         with _tt_desc_col:
-            st.write(
-                "Plot import and export volumes for up to three countries or regions over time. "
-                "Choose from trade series (by product category) or production series "
-                "(mined and refined lead from BGS/USGS). Absolute tonnes or year-on-year % change."
-            )
+            if ADVANCED:
+                st.write(
+                    "Plot import and export volumes for up to three countries or regions over time. "
+                    "Choose from trade series (by product category) or production series "
+                    "(mined and refined lead from BGS/USGS). Absolute tonnes or year-on-year % change."
+                )
+            else:
+                st.write("Plot trade and related data over time to see trends.")
         with _tt_lm_col:
             with st.popover("ℹ Learn more"):
                 st.markdown(
                     "**Data source:** BACI for trade series; BGS World Mineral Statistics "
                     "or USGS Mineral Yearbooks for production series.\n\n"
-                    "**How it's used:** Trade series sum BACI flows by year for the selected "
-                    "country or UN sub-region. Production series are drawn directly from the "
-                    "mining/refining dataset chosen in the sidebar. The 'Lead Smelted/Refined' "
-                    "series combines primary and secondary refined lead."
+                    "**How it's used:** Plot import and export volumes for one or more countries "
+                    "or UN sub-regions over time. Choose trade series (by product category) or "
+                    "production series (mined and refined lead). Trade series sum BACI flows by "
+                    "year; production series come from the mining/refining dataset. The 'Lead "
+                    "Smelted/Refined' series combines primary and secondary refined lead. "
+                    "Advanced mode adds up to three places, a year-on-year % change view, and a "
+                    "shared y-axis toggle."
                 )
         _bgs_data       = _load_bgs()
         _tt_usgs_mined  = _load_usgs_mined()
         _tt_usgs_ref    = _load_usgs_refined()
         _tt_year_idx = pd.Index(sorted(baci_df["Year"].unique()), name="Year")
 
+        # No pre-selected country: slot 1 opens on a placeholder in both modes.
+        _TT_PLACEHOLDER = "— Select a country or region —"
         _tt_opts = sorted(all_baci_countries) + [_TT_SEPARATOR] + list(REGIONS_ORDERED)
+        _tt_opt_slot1 = [_TT_PLACEHOLDER] + _tt_opts
         _tt_opt_with_none = ["— None —"] + _tt_opts
-        _tt_ghana_idx = _tt_opts.index("Ghana") if "Ghana" in _tt_opts else 0
 
-        tt_c1, tt_c2, tt_c3 = st.columns(3)
-        with tt_c1:
+        if ADVANCED:
+            tt_c1, tt_c2, tt_c3 = st.columns(3)
+            with tt_c1:
+                tt_sel1 = st.selectbox(
+                    "Country / Region 1", _tt_opt_slot1, index=0, key="tt_sel1",
+                )
+            with tt_c2:
+                tt_sel2 = st.selectbox(
+                    "Country / Region 2 (optional)", _tt_opt_with_none,
+                    index=0, key="tt_sel2",
+                )
+            with tt_c3:
+                tt_sel3 = st.selectbox(
+                    "Country / Region 3 (optional)", _tt_opt_with_none,
+                    index=0, key="tt_sel3",
+                )
+            _tt_selections = [tt_sel1, tt_sel2, tt_sel3]
+        else:
             tt_sel1 = st.selectbox(
-                "Country / Region 1", _tt_opts,
-                index=_tt_ghana_idx, key="tt_sel1",
+                "Country / Region", _tt_opt_slot1, index=0, key="tt_sel1",
             )
-        with tt_c2:
-            tt_sel2 = st.selectbox(
-                "Country / Region 2 (optional)", _tt_opt_with_none,
-                index=0, key="tt_sel2",
-            )
-        with tt_c3:
-            tt_sel3 = st.selectbox(
-                "Country / Region 3 (optional)", _tt_opt_with_none,
-                index=0, key="tt_sel3",
-            )
+            _tt_selections = [tt_sel1]
 
-        tt_rc1, tt_rc2, tt_rc3 = st.columns([3, 1, 1])
-        with tt_rc1:
+        if ADVANCED:
+            tt_rc1, tt_rc2, tt_rc3 = st.columns([3, 1, 1])
+            with tt_rc1:
+                tt_series = st.multiselect(
+                    "Series", _TT_SERIES_NAMES,
+                    default=["Total Lead-Related Imports", "Total Lead-Related Exports"],
+                    key="tt_series",
+                )
+            with tt_rc2:
+                tt_view = st.radio(
+                    "View",
+                    ["Absolute (tonnes Pb)", "Relative (% change from prior year)"],
+                    index=0, key="tt_view",
+                )
+            with tt_rc3:
+                tt_shared_y = st.checkbox("Shared y-axis", value=True, key="tt_shared_y")
+        else:
             tt_series = st.multiselect(
                 "Series", _TT_SERIES_NAMES,
-                default=["Total Imports", "Total Exports"], key="tt_series",
+                default=["Total Lead-Related Imports", "Total Lead-Related Exports"],
+                key="tt_series",
             )
-        with tt_rc2:
-            tt_view = st.radio(
-                "View",
-                ["Absolute (tonnes Pb)", "Relative (% change from prior year)"],
-                index=0, key="tt_view",
-            )
-        with tt_rc3:
-            tt_shared_y = st.checkbox("Shared y-axis", value=True, key="tt_shared_y")
+            tt_view = "Absolute (tonnes Pb)"
+            tt_shared_y = True
 
         def _tt_valid(s: str) -> bool:
-            return bool(s) and s != "— None —" and s != _TT_SEPARATOR
+            return bool(s) and s not in ("— None —", _TT_PLACEHOLDER, _TT_SEPARATOR)
 
         _tt_slots = [
             (sel, col)
-            for sel, col in zip([tt_sel1, tt_sel2, tt_sel3], _TT_SLOT_COLORS)
+            for sel, col in zip(_tt_selections, _TT_SLOT_COLORS)
             if _tt_valid(sel)
         ]
 
         if not tt_series:
             st.info("Select at least one series above.")
         elif not _tt_slots:
-            st.warning("Select a valid country or region in slot 1.")
+            st.info("Select a country or region above to plot its trends.")
         else:
             _tt_slot_results = [
                 _tt_compute_slot(
@@ -1326,248 +1229,249 @@ with tab_trade:
 
     # ── Flow Network ──────────────────────────────────────────────────────────
 
-    with _t_flow:
+    if _page == "Trade Relationships":
         _fn_desc_col, _fn_lm_col = st.columns([8, 1])
         with _fn_desc_col:
-            st.write(
-                "A schematic node-link diagram of bilateral lead product flows between selected countries. "
-                "Bubble size reflects total BACI trade volume (imports + exports across all categories). "
-                "Arrows are colored by product category and scaled by flow volume. "
-                "Choose a layout preset — or switch to the **Interactive** view to drag nodes freely."
-            )
+            if ADVANCED:
+                st.write(
+                    "A schematic node-link diagram of bilateral lead product flows between selected countries. "
+                    "Bubble size reflects total BACI trade volume (imports + exports across all categories). "
+                    "Arrows are colored by product category and scaled by flow volume. "
+                    "Drag nodes freely in the interactive view."
+                )
+            else:
+                st.write(
+                    "A schematic node-link diagram of bilateral lead product flows between selected countries."
+                )
         with _fn_lm_col:
             with st.popover("ℹ Learn more"):
                 st.markdown(
                     "**Data source:** BACI bilateral trade flows.\n\n"
-                    "**How it's used:** Flows below the minimum threshold are hidden to reduce "
-                    "clutter. Each arrow represents the net flow between two countries for a "
-                    "given product category. Arrow width is scaled to √(volume) so small flows "
-                    "remain visible. Use this view to spot dominant corridors — e.g. which "
-                    "countries are the main scrap suppliers to a processing hub."
+                    "**How it's used:** Bubble size reflects total BACI trade volume; arrows are "
+                    "colored by product category and scaled by flow volume (√-scaled so small "
+                    "flows stay visible). Flows below the minimum threshold are hidden to reduce "
+                    "clutter. Choose a focal country to show only the flows that involve it — "
+                    "countries with no connection to it are dropped automatically. Use this view "
+                    "to spot dominant corridors, e.g. the main scrap suppliers to a processing hub."
                 )
 
-        # ── View mode ─────────────────────────────────────────────────────────────
-        fn_view_mode = st.radio(
-            "View mode",
-            options=["Static (Plotly)", "Interactive (draggable)"],
-            index=0,
-            horizontal=True,
-            key="fn_view_mode",
-            help=(
-                "**Static**: Plotly figure with a chosen layout preset (circle, grid, "
-                "force-directed, or geographic).\n\n"
-                "**Interactive**: pyvis / vis.js graph where you can grab and drag "
-                "individual nodes. Zoom with the scroll wheel."
-            ),
-        )
+        # ── View mode: interactive (draggable) is the default in both modes;
+        # Advanced can switch back to the static Plotly view.
+        if ADVANCED:
+            fn_view_mode = st.radio(
+                "View mode",
+                options=["Interactive (draggable)", "Static (Plotly)"],
+                index=0,
+                horizontal=True,
+                key="fn_view_mode",
+                help=(
+                    "**Interactive**: pyvis / vis.js graph where you can grab and drag "
+                    "individual nodes. Zoom with the scroll wheel.\n\n"
+                    "**Static**: Plotly figure with a chosen layout preset (circle, grid, "
+                    "force-directed, or geographic)."
+                ),
+            )
+        else:
+            fn_view_mode = "Interactive (draggable)"
 
-        # ── Controls ──────────────────────────────────────────────────────────────
-        fn_col1, fn_col2 = st.columns([3, 1])
-
-        with fn_col1:
-            _fn_defaults = [
-                c for c in ["Ghana", "Nigeria", "India", "Rep. of Korea", "USA"]
-                if c in all_baci_countries
-            ]
+        # ── Countries (+ minimum flow in Advanced) ────────────────────────────
+        _fn_defaults = [c for c in ["India", "China", "USA"] if c in all_baci_countries]
+        if ADVANCED:
+            fn_col1, fn_col2 = st.columns([3, 1])
+            with fn_col1:
+                fn_countries = st.multiselect(
+                    "Select countries",
+                    options=all_baci_countries,
+                    default=_fn_defaults,
+                    key="fn_countries",
+                    help="Select 2-15 countries. Bubbles sized by total BACI trade volume; arrows show bilateral flows.",
+                )
+            with fn_col2:
+                fn_min_flow = st.slider(
+                    "Minimum flow to display (t Pb)",
+                    min_value=100, max_value=10000, value=500, step=100,
+                    key="fn_min_flow",
+                )
+        else:
             fn_countries = st.multiselect(
                 "Select countries",
                 options=all_baci_countries,
                 default=_fn_defaults,
                 key="fn_countries",
-                help="Select 2–15 countries. Bubbles sized by total BACI trade volume; arrows show bilateral flows.",
+                help="Select 2-15 countries. Bubbles sized by total BACI trade volume; arrows show bilateral flows.",
             )
+            fn_min_flow = 100
 
-        with fn_col2:
-            fn_min_flow = st.slider(
-                "Minimum flow to display (t Pb)",
-                min_value=100, max_value=10000, value=500, step=100,
-                key="fn_min_flow",
-            )
-
-        # Layout preset + focal country + cluster controls
+        # ── Layout + focal country (+ region cluster in Advanced) ─────────────
         _LAYOUT_LABELS = {
             "Circle": "circle",
             "Grid": "grid",
             "Force-directed (by trade weight)": "force",
             "Geographic centroids": "geographic",
         }
-        fn_layout_col0, fn_layout_col1, fn_layout_col2 = st.columns([2, 2, 2])
-        with fn_layout_col0:
-            fn_layout_label = st.selectbox(
-                "Initial layout",
-                options=list(_LAYOUT_LABELS.keys()),
-                index=0,
-                key="fn_layout",
-                help=(
-                    "**Circle**: even spacing around a ring (with focal at center).  "
-                    "**Grid**: rows and columns.  "
-                    "**Force-directed**: pairs with heavier trade pull closer together.  "
-                    "**Geographic centroids**: approximate world position on a schematic canvas."
-                ),
-            )
-        fn_layout_code = _LAYOUT_LABELS[fn_layout_label]
 
-        with fn_layout_col1:
+        def _fn_focal_selectbox():
+            # Focal country: optional, no default center. Choosing one shows only
+            # the flows that involve it and drops unconnected countries.
             if fn_countries:
-                fn_focal_raw = st.selectbox(
-                    "Focal country (placed at center)",
+                _raw = st.selectbox(
+                    "Focal country (optional)",
                     options=["— None —"] + fn_countries,
-                    index=1 if fn_countries else 0,
+                    index=0,
                     key="fn_focal",
                     help=(
-                        "For the Circle layout the focal country goes at the center. "
-                        "For Grid, Force, and Geographic layouts it is placed but not centered."
+                        "Optional. Choose a focal country to show only the flows that involve "
+                        "it; countries with no connection to it are removed automatically."
                     ),
                 )
-                fn_focal_country = None if fn_focal_raw.startswith("—") else fn_focal_raw
-            else:
-                fn_focal_country = None
+                return None if _raw.startswith("—") else _raw
+            return None
 
-        with fn_layout_col2:
-            fn_use_cluster = st.toggle(
-                "Treat a region as single node",
-                value=False,
-                key="fn_use_cluster",
-                help="Aggregate all flows to/from countries in the selected region into a single node.",
-            )
-            if fn_use_cluster:
-                _fn_cluster_options = (
-                    MAJOR_REGIONS_ORDERED
-                    + [_RTV_REGION_SEP]
-                    + REGIONS_ORDERED
+        if ADVANCED:
+            fn_lc0, fn_lc1, fn_lc2 = st.columns([2, 2, 2])
+            with fn_lc0:
+                fn_layout_label = st.selectbox(
+                    "Initial layout",
+                    options=list(_LAYOUT_LABELS.keys()),
+                    index=0,
+                    key="fn_layout",
+                    help=(
+                        "**Circle**: even spacing around a ring (with focal at center).  "
+                        "**Grid**: rows and columns.  "
+                        "**Force-directed**: pairs with heavier trade pull closer together.  "
+                        "**Geographic centroids**: approximate world position on a schematic canvas."
+                    ),
                 )
-                fn_cluster_region = st.selectbox(
-                    "Region to aggregate",
-                    options=_fn_cluster_options,
-                    key="fn_cluster_region",
-                    help="Choose a UN region (e.g. 'Africa') or a UN sub-region (e.g. 'Western Africa').",
+            with fn_lc1:
+                fn_focal_country = _fn_focal_selectbox()
+            with fn_lc2:
+                fn_use_cluster = st.toggle(
+                    "Treat a region as single node",
+                    value=False,
+                    key="fn_use_cluster",
+                    help="Aggregate all flows to/from countries in the selected region into a single node.",
                 )
-            else:
-                fn_cluster_region = None
+                if fn_use_cluster:
+                    _fn_cluster_options = (
+                        MAJOR_REGIONS_ORDERED + [_RTV_REGION_SEP] + REGIONS_ORDERED
+                    )
+                    fn_cluster_region = st.selectbox(
+                        "Region to aggregate",
+                        options=_fn_cluster_options,
+                        key="fn_cluster_region",
+                        help="Choose a UN region (e.g. 'Africa') or a UN sub-region (e.g. 'Western Africa').",
+                    )
+                else:
+                    fn_cluster_region = None
+        else:
+            _fn_easy_layouts = {
+                "Circle": "circle",
+                "Geographic centroids": "geographic",
+            }
+            fn_lc0, fn_lc1 = st.columns(2)
+            with fn_lc0:
+                fn_layout_label = st.selectbox(
+                    "Layout",
+                    options=list(_fn_easy_layouts.keys()),
+                    index=0,
+                    key="fn_layout_easy",
+                )
+            with fn_lc1:
+                fn_focal_country = _fn_focal_selectbox()
+            fn_use_cluster = False
+            fn_cluster_region = None
+        fn_layout_code = _LAYOUT_LABELS[fn_layout_label]
 
-        # Category checkboxes — horizontal row
-        fn_cat_cols = st.columns(4)
-        with fn_cat_cols[0]:
-            fn_feed  = st.checkbox(
-                "Smelted Lead (FEED)", value=True, key="fn_feed",
-            )
-        with fn_cat_cols[1]:
-            fn_batt  = st.checkbox(
-                "New Batteries (BATT)", value=True, key="fn_batt",
-            )
-        with fn_cat_cols[2]:
-            fn_used  = st.checkbox(
-                "Used Batteries (USED)", value=True, key="fn_used",
-            )
-        with fn_cat_cols[3]:
-            fn_scrap = st.checkbox(
-                "Lead Scrap (SCRAP)", value=True, key="fn_scrap",
-            )
+        # ── Product categories (same five as Trade Map, incl. Ore) ────────────
+        st.caption("Product categories to include")
+        fn_cat_cols = st.columns(len(_CAT_LABEL_LIST))
+        fn_categories: list[str] = []
+        for _i, _lbl in enumerate(_CAT_LABEL_LIST):
+            with fn_cat_cols[_i]:
+                if st.checkbox(_lbl, value=True, key=f"fn_cat_{_CAT_LABELS[_lbl]}"):
+                    fn_categories.append(_CAT_LABELS[_lbl])
 
-        fn_categories = (
-            (["FEED"]  if fn_feed  else []) +
-            (["BATT"]  if fn_batt  else []) +
-            (["USED"]  if fn_used  else []) +
-            (["SCRAP"] if fn_scrap else [])
-        )
-
-        fn_dir = st.radio(
-            "Flow direction",
-            options=["Both", "Import flows", "Export flows"],
-            index=0,
-            horizontal=True,
-            key="fn_dir",
-            disabled=fn_focal_country is None,
-            help=(
-                "Filters arrows relative to the focal country: **Import flows** "
-                "shows arrows into the focal country, **Export flows** shows arrows "
-                "out of it. Requires a focal country — with none set, every arrow is "
-                "both an import and an export, so only 'Both' applies."
-            ),
-        )
-        # Import/export is only meaningful relative to the focal country; with
-        # none set, force "Both" so the (disabled) radio can't hide everything.
-        if fn_focal_country is None:
+        # ── Flow direction (Advanced only; Easy always shows both) ────────────
+        if ADVANCED:
+            fn_dir = st.radio(
+                "Flow direction",
+                options=["Both", "Import flows", "Export flows"],
+                index=0,
+                horizontal=True,
+                key="fn_dir",
+                disabled=fn_focal_country is None,
+                help=(
+                    "Filters arrows relative to the focal country: **Import flows** shows "
+                    "arrows into the focal country, **Export flows** shows arrows out of it. "
+                    "Requires a focal country."
+                ),
+            )
+            if fn_focal_country is None:
+                fn_dir = "Both"
+        else:
             fn_dir = "Both"
         fn_show_imports = fn_dir in ["Both", "Import flows"]
         fn_show_exports = fn_dir in ["Both", "Export flows"]
 
-        # ── Scope + arrow hiding controls ────────────────────────────────────────
-        fn_scope_col1, fn_scope_col2, fn_scope_col3 = st.columns(3)
-        with fn_scope_col1:
+        # ── Year scope (Advanced only) ────────────────────────────────────────
+        if ADVANCED:
             fn_all_years = st.checkbox(
                 "Use all years in BACI dataset",
                 value=False,
                 key="fn_all_years",
                 help=(
                     "Ignore the sidebar year filter and use every year in the "
-                    f"BACI dataset ({min_year}–{max_year}). Bubble sizes and arrow "
+                    f"BACI dataset ({min_year}-{max_year}). Bubble sizes and arrow "
                     "widths reflect the full-period annualised trade volume."
                 ),
             )
-        with fn_scope_col2:
-            fn_focal_only = st.checkbox(
-                "Only show flows involving focal country",
-                value=False,
-                key="fn_focal_only",
-                disabled=fn_focal_country is None,
-                help=(
-                    "When a focal country is set, hide arrows between two non-focal "
-                    "countries. Useful for keeping the focal country as the visual "
-                    "centerpiece (e.g. Ghana with USA and India both present, but no "
-                    "USA↔India arrow)."
-                ),
-            )
-        with fn_scope_col3:
-            fn_prune_isolated = st.checkbox(
-                "Auto-remove countries with no focal connection",
-                value=False,
-                key="fn_prune_isolated",
-                disabled=fn_focal_country is None,
-                help=(
-                    "After all other filters, drop any selected country that has no "
-                    "arrow to the focal country. Useful when you pick 'all countries' "
-                    "and only want to see those that actually trade with the focal "
-                    "country. Reversible — untick to bring them back."
-                ),
-            )
-
-        _FN_PAIR_HIDER_CAP = 20
-        if len(fn_countries) > _FN_PAIR_HIDER_CAP:
-            st.caption(
-                f"Pair-hider available with ≤ {_FN_PAIR_HIDER_CAP} countries selected "
-                f"({len(fn_countries)} selected). Narrow the selection to hide "
-                "specific pairs."
-            )
-            fn_hidden_pairs: set[frozenset[str]] = set()
         else:
-            _fn_all_pairs: list[tuple[str, str]] = []
-            _seen: set[frozenset[str]] = set()
-            for _a in fn_countries:
-                for _b in fn_countries:
-                    if _a == _b:
-                        continue
-                    key = frozenset([_a, _b])
-                    if key in _seen:
-                        continue
-                    _seen.add(key)
-                    _fn_all_pairs.append(tuple(sorted([_a, _b])))
-            _fn_pair_labels = [f"{a} ↔ {b}" for a, b in _fn_all_pairs]
-            _fn_pair_lookup = {f"{a} ↔ {b}": frozenset([a, b]) for a, b in _fn_all_pairs}
-            fn_hidden_pair_labels = st.multiselect(
-                "Hide specific country pairs",
-                options=_fn_pair_labels,
-                default=[],
-                key="fn_hidden_pairs",
-                help=(
-                    "Pick country pairs to hide. Both directions are removed. "
-                    "Example: select 'India ↔ USA' to drop USA→India and India→USA "
-                    "arrows while keeping every other flow."
-                ),
-            )
-            fn_hidden_pairs = {
-                _fn_pair_lookup[l] for l in fn_hidden_pair_labels
-            }
+            fn_all_years = False
+
+        # ── Focal-country behaviours are bundled into the focal choice ────────
+        # Choosing a focal country automatically limits the view to flows that
+        # involve it and drops countries with no connection to it (both modes).
+        fn_focal_only = fn_focal_country is not None
+        fn_prune_isolated = fn_focal_country is not None
+
+        # ── Pair hider (Advanced only) ────────────────────────────────────────
+        if ADVANCED:
+            _FN_PAIR_HIDER_CAP = 20
+            if len(fn_countries) > _FN_PAIR_HIDER_CAP:
+                st.caption(
+                    f"Pair-hider available with <= {_FN_PAIR_HIDER_CAP} countries selected "
+                    f"({len(fn_countries)} selected). Narrow the selection to hide "
+                    "specific pairs."
+                )
+                fn_hidden_pairs: set[frozenset[str]] = set()
+            else:
+                _fn_all_pairs: list[tuple[str, str]] = []
+                _seen: set[frozenset[str]] = set()
+                for _a in fn_countries:
+                    for _b in fn_countries:
+                        if _a == _b:
+                            continue
+                        key = frozenset([_a, _b])
+                        if key in _seen:
+                            continue
+                        _seen.add(key)
+                        _fn_all_pairs.append(tuple(sorted([_a, _b])))
+                _fn_pair_labels = [f"{a} <-> {b}" for a, b in _fn_all_pairs]
+                _fn_pair_lookup = {f"{a} <-> {b}": frozenset([a, b]) for a, b in _fn_all_pairs}
+                fn_hidden_pair_labels = st.multiselect(
+                    "Hide specific country pairs",
+                    options=_fn_pair_labels,
+                    default=[],
+                    key="fn_hidden_pairs",
+                    help=(
+                        "Pick country pairs to hide. Both directions are removed. "
+                        "Example: select 'India <-> USA' to drop USA->India and India->USA "
+                        "arrows while keeping every other flow."
+                    ),
+                )
+                fn_hidden_pairs = {_fn_pair_lookup[l] for l in fn_hidden_pair_labels}
+        else:
+            fn_hidden_pairs = set()
 
         st.divider()
 
@@ -1682,192 +1586,7 @@ with tab_trade:
             )
 
 
-    # ── Trade Composition ─────────────────────────────────────────────────────
-
-    with _t_comp:
-        _tc_hdr_col, _tc_lm_col = st.columns([8, 1])
-        with _tc_hdr_col:
-            st.subheader("Lead Trade Composition Map")
-            st.caption(
-                "Color encodes each country's import or export mix across three lead product categories. "
-                "Uses a triangular RYB color model: blue = battery inputs, yellow = new batteries, "
-                "red = battery waste/scrap. Mixed colors indicate blended portfolios; white = balanced."
-            )
-        with _tc_lm_col:
-            with st.popover("ℹ Learn more"):
-                st.markdown(
-                    "**Data source:** BACI trade flows, aggregated into three categories: "
-                    "Battery Inputs (refined lead, oxides, battery parts), "
-                    "New Batteries (HS 850710/720), and Battery Waste (scrap + used batteries).\n\n"
-                    "**How it's used:** Each country's share across the three categories is "
-                    "mapped to an RYB color using a circular-mean algorithm. The color at each "
-                    "corner is pure — blue, yellow, or red. Mixed economies (e.g. importing both "
-                    "batteries and feedstock) appear as intermediate hues. A white country has "
-                    "roughly equal shares across all three categories.\n\n"
-                    "Use the ternary chart above the map to compare specific countries in detail."
-                )
-        render_trade_composition_map(sidebar_year=year, dataset=_dataset_key, pb_factors=pb_factors)
-
-
-    # ── Supply Chain Provenance ───────────────────────────────────────────────
-
-    with _t_prov:
-        _pv_desc_col, _pv_lm_col = st.columns([8, 1])
-        with _pv_desc_col:
-            st.write(
-                "Trace all input supply chains into a selected end-market country across three pathways. "
-                "Pathway A follows the battery supply chain: who ships new batteries, who "
-                "supplies their feedstock, and who supplies scrap to those smelters. "
-                "Pathway B traces direct smelted lead suppliers and their scrap inputs. "
-                "Pathway C shows direct scrap and waste battery suppliers. "
-                "Colors match the product palette: 🟩 green = battery pathway (A), 🟦 blue = smelted lead pathway (B), 🟧 orange = scrap/waste pathway (C). Darker shade = closer to the end market."
-            )
-        with _pv_lm_col:
-            with st.popover("ℹ Learn more"):
-                st.markdown(
-                    "**Data source:** BACI bilateral trade flows.\n\n"
-                    "**How it's used:** Starting from the selected country, the tool walks "
-                    "backwards through the BACI network up to three layers deep. Layer 1 = "
-                    "direct suppliers; Layer 2 = those suppliers' suppliers; Layer 3 = one "
-                    "step further back. Each pathway follows a specific product type so you "
-                    "can trace, for example, which countries supply scrap to the smelters "
-                    "that supply refined lead to the battery manufacturers that supply your "
-                    "end market. Note: this is a trade-flow proxy — it cannot verify actual "
-                    "physical supply chain links."
-                )
-
-        prov_col1, prov_col2 = st.columns([3, 1])
-
-        with prov_col1:
-            prov_country = st.selectbox(
-                "Select end-market country",
-                options=all_baci_countries,
-                index=all_baci_countries.index("USA") if "USA" in all_baci_countries else 0,
-                key="prov_country",
-                help=(
-                    "Country receiving lead-acid battery products. "
-                    "The map traces all input supply chains backwards through three pathways."
-                ),
-            )
-
-        with prov_col2:
-            prov_top_n = st.slider(
-                "Countries per tier",
-                min_value=3,
-                max_value=20,
-                value=10,
-                step=1,
-                key="prov_top_n",
-                help="Maximum number of countries shown in each supply-chain tier.",
-            )
-
-        prov_layer = st.radio(
-            "Supply chain depth",
-            options=["Layer 1 only", "Layers 1–2", "Layers 1–3"],
-            index=2,
-            horizontal=True,
-            key="prov_layer",
-            help=(
-                "Layer 1: direct suppliers (A1, B1, C1). "
-                "Layer 2: suppliers to direct suppliers (A2, B2). "
-                "Layer 3: one step further back (A3)."
-            ),
-        )
-        prov_max_layer = {"Layer 1 only": 1, "Layers 1–2": 2, "Layers 1–3": 3}[prov_layer]
-
-        period_note = f" ({period_label})" if len(active_years) > 1 else ""
-
-        fig_prov = build_provenance_map(
-            baci_df=baci_df,
-            active_years=active_years,
-            selected_country=prov_country,
-            top_n=prov_top_n,
-            max_layer=prov_max_layer,
-        )
-        st.plotly_chart(fig_prov, use_container_width=True)
-
-        st.markdown(
-            f"**{prov_country}** "
-            "<span style='background:#1565C0;color:#fff;padding:1px 6px;border-radius:3px'>"
-            "■ Selected</span> &nbsp;"
-            "<span style='background:#43A047;color:#fff;padding:1px 6px;border-radius:3px'>"
-            "■ A1 — battery suppliers</span> &nbsp;"
-            "<span style='background:#A5D6A7;color:#333;padding:1px 6px;border-radius:3px'>"
-            "■ A2/A3 — upstream battery chain</span> &nbsp;"
-            "<span style='background:#1E88E5;color:#fff;padding:1px 6px;border-radius:3px'>"
-            "■ B1 — smelted lead suppliers</span> &nbsp;"
-            "<span style='background:#90CAF9;color:#333;padding:1px 6px;border-radius:3px'>"
-            "■ B2 — upstream smelter feedstock</span> &nbsp;"
-            "<span style='background:#FB8C00;color:#fff;padding:1px 6px;border-radius:3px'>"
-            "■ C1 — scrap/waste suppliers</span>  "
-            f"Hover over any country for tier details.{period_note}",
-            unsafe_allow_html=True,
-        )
-
-        a1_df, a2_df, a3_df, b1_df, b2_df, c1_df = get_provenance_tables(
-            baci_df=baci_df,
-            active_years=active_years,
-            selected_country=prov_country,
-            top_n=prov_top_n,
-            max_layer=prov_max_layer,
-        )
-
-        st.divider()
-        col_a, col_b, col_c = st.columns(3)
-
-        with col_a:
-            st.markdown("**Pathway A — Battery Supply Chain**")
-            st.caption(f"A1 — New battery suppliers to {prov_country}")
-            if a1_df.empty:
-                st.info(f"No battery imports recorded for **{prov_country}** in {period_label}.")
-            else:
-                st.dataframe(a1_df, hide_index=True, use_container_width=True,
-                             column_config={"t Pb (new batteries)": st.column_config.NumberColumn(format="%d")})
-            st.caption("A2 — Feedstock (FEED/SCRAP/USED) suppliers to Tier A1")
-            if a2_df.empty:
-                st.info("No feedstock flows found for Tier A1 countries.")
-            else:
-                st.dataframe(a2_df, hide_index=True, use_container_width=True,
-                             column_config={"t Pb (feedstock to battery mfrs)": st.column_config.NumberColumn(format="%d")})
-            st.caption("A3 — Scrap/waste suppliers to Tier A2")
-            if a3_df.empty:
-                st.info("No scrap/waste flows found for Tier A2 countries.")
-            else:
-                st.dataframe(a3_df, hide_index=True, use_container_width=True,
-                             column_config={"t Pb (scrap to smelters)": st.column_config.NumberColumn(format="%d")})
-
-        with col_b:
-            st.markdown("**Pathway B — Direct Smelted Lead Supply**")
-            st.caption(f"B1 — Smelted lead suppliers to {prov_country}")
-            if b1_df.empty:
-                st.info(f"No smelted lead imports recorded for **{prov_country}** in {period_label}.")
-            else:
-                st.dataframe(b1_df, hide_index=True, use_container_width=True,
-                             column_config={"t Pb (smelted lead)": st.column_config.NumberColumn(format="%d")})
-            st.caption("B2 — Scrap/waste suppliers to Tier B1 countries")
-            if b2_df.empty:
-                st.info("No scrap/waste flows found for Tier B1 countries.")
-            else:
-                st.dataframe(b2_df, hide_index=True, use_container_width=True,
-                             column_config={"t Pb (scrap to lead producers)": st.column_config.NumberColumn(format="%d")})
-
-        with col_c:
-            st.markdown("**Pathway C — Direct Scrap/Waste Supply**")
-            st.caption(f"C1 — Scrap/waste suppliers directly to {prov_country}")
-            if c1_df.empty:
-                st.info(f"No scrap or waste battery imports recorded for **{prov_country}** in {period_label}.")
-            else:
-                st.dataframe(c1_df, hide_index=True, use_container_width=True,
-                             column_config={"t Pb (scrap/waste)": st.column_config.NumberColumn(format="%d")})
-
-        st.caption(
-            f"Flows annualised over {period_label}. All values in tonnes of lead (t Pb). "
-            "A1: HS 850710/850720 (new batteries). "
-            "B1: HS 780110/780191/780199/850790/282410/282490 (smelted lead/feed). "
-            "C1/A2/A3/B2: HS 780200/854810 (scrap/waste batteries). "
-            "Countries excluded from lower tiers if already shown in a higher-priority tier."
-        )
-
+    _easy_assumptions_footer()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1954,65 +1673,73 @@ def _make_choropleth(
 
 
 
-with tab_massbal:
-    # Display order matches the labels list. Variable names remain bound to
-    # their semantic content (e.g. _mb_snapshot still wraps the snapshot block
-    # further down the file); only the tab order shown to the user changes.
-    _mb_prod, _mb_snapshot, _mb_accum, _mb_process, _mb_mass_balance = st.tabs([
-        "Production & Capacity",
-        "Recycling Economy Snapshot",
-        "Lead Accumulation",
-        "Process Estimates",
-        "Mass Balance (Under Construction)",
-    ])
+if _page in ("Production & Capacity", "Lead Accumulation", "Recycling Economy Snapshot", "Material Flow (Beta)"):
 
     # ── Production & Capacity ─────────────────────────────────────────────────
 
-    with _mb_prod:
+    if _page == "Production & Capacity":
         import math as _math
 
         _mbp_desc_col, _mbp_lm_col = st.columns([8, 1])
         with _mbp_desc_col:
-            st.write(
-                "Where is lead being mined? Where is it being refined? Where are batteries "
-                "manufactured, and where do they enter service? Select a question below to "
-                "explore the global picture. All scales are logarithmic — enabling comparison "
-                "across small and large producers. Countries in grey have no data for the "
-                "selected view. Use the animated toggle for time-lapse playback."
-            )
+            if ADVANCED:
+                st.write(
+                    "Where is lead being mined? Where is it being refined? Where are batteries "
+                    "manufactured, and where do they enter service? Select a question below to "
+                    "explore the global picture. All scales are logarithmic — enabling comparison "
+                    "across small and large producers. Countries in grey have no data for the "
+                    "selected view. Use the animated toggle for time-lapse playback."
+                )
+            else:
+                st.write("Explore where lead is mined, refined, manufactured, and used.")
         with _mbp_lm_col:
             with st.popover("ℹ Learn more"):
                 st.markdown(
                     "**Lead Mining / Lead Refining** — drawn directly from BGS or USGS "
                     "national statistics (select source in sidebar). These are reported "
                     "figures, not estimates.\n\n"
-                    "**Battery Manufacturing / Battery Use** — derived from the mass-balance "
-                    "model using trade data and process parameters. Adjust the parameter "
-                    "sliders below the map to test sensitivity.\n\n"
-                    "For Lead Mining and Lead Refining, a ranked country table is shown "
-                    "below the map."
+                    "**Battery Manufacturing (BOTEC) / Battery Consumption (BOTEC)** — "
+                    "back-of-the-envelope estimates from the material-flow model using trade "
+                    "data and process parameters. Advanced mode exposes parameter sliders to "
+                    "test sensitivity.\n\n"
+                    "All scales are logarithmic. For Lead Mining and Lead Refining, a ranked "
+                    "country table is shown below the map."
                 )
 
         _mining_refining_df3 = _load_mining_refining()
 
         _ESTIMATED_DATASETS = {
-            "Battery Manufacturing",
-            "Battery Use",
+            "Battery Manufacturing (BOTEC)",
+            "Battery Consumption (BOTEC)",
         }
+        # Custom yellow (amber) sequential scale for Battery Consumption — Plotly
+        # has no yellow-dominant named sequential that stays legible on white.
+        _YELLOW_SCALE = [[0.0, "#FFF9C4"], [0.55, "#FDD835"], [1.0, "#F57F17"]]
         _COLORSCALES = {
-            "Lead Mining":              "Greys",
-            "Lead Refining":            "Purples",
-            "Battery Manufacturing":    "Greens",
-            "Battery Use":              "Reds",
+            "Lead Mining":                   "Purples",
+            "Lead Refining":                 "Blues",
+            "Battery Manufacturing (BOTEC)": "Greens",
+            "Battery Consumption (BOTEC)":   _YELLOW_SCALE,
         }
         _METRIC_KEYS = {
-            "Battery Manufacturing":    "F4_batt_lead",
-            "Battery Use":              "F5_implied",
+            "Battery Manufacturing (BOTEC)": "F4_batt_lead",
+            "Battery Consumption (BOTEC)":   "F5_implied",
         }
 
-        # ── Dataset selector + animation toggle ───────────────────────────────────
-        _pd_ctrl1, _pd_ctrl2 = st.columns([5, 1])
-        with _pd_ctrl1:
+        # ── Dataset selector (+ animation toggle in Advanced) ─────────────────────
+        if ADVANCED:
+            _pd_ctrl1, _pd_ctrl2 = st.columns([5, 1])
+            with _pd_ctrl1:
+                prod_dataset = st.radio(
+                    "Dataset",
+                    options=list(_COLORSCALES.keys()),
+                    index=0,
+                    horizontal=True,
+                    key="prod_dataset",
+                )
+            with _pd_ctrl2:
+                prod_animate = st.toggle("Animated", value=False, key="prod_animate")
+        else:
             prod_dataset = st.radio(
                 "Dataset",
                 options=list(_COLORSCALES.keys()),
@@ -2020,10 +1747,17 @@ with tab_massbal:
                 horizontal=True,
                 key="prod_dataset",
             )
-        with _pd_ctrl2:
-            prod_animate = st.toggle("Animated", value=False, key="prod_animate")
+            prod_animate = False
 
         _colorscale = _COLORSCALES[prod_dataset]
+
+        # Mining/refining source for THIS tab only. Advanced follows the global
+        # sidebar; Easy exposes a page-local BGS/USGS toggle rendered below the
+        # map (read here via the deferred-read pattern, applied on next rerun).
+        if ADVANCED:
+            _prod_mining_pref = _mining_pref
+        else:
+            _prod_mining_pref = st.session_state.get("prod_mining_pref_easy", "BGS")
 
         # ── Process parameters (estimated metrics only) ───────────────────────────
         _map_eta_secondary = 0.97
@@ -2035,44 +1769,50 @@ with tab_massbal:
         _map_gamma         = 0.70
 
         if prod_dataset in _ESTIMATED_DATASETS:
-            st.info(
-                f"**{prod_dataset}** is a model estimate derived from the mass-balance "
-                "equations using trade data and mining/refining anchors. "
-                "Adjust the parameters below to explore sensitivity."
-            )
-            with st.expander("Process parameters", expanded=False):
-                _mp_c1, _mp_c2 = st.columns(2)
-                with _mp_c1:
-                    _map_eta_secondary = st.slider(
-                        "Secondary smelting recovery (η_secondary)",
-                        0.80, 1.00, 0.97, 0.01, format="%.2f", key="map_eta_secondary",
-                    )
-                    _map_eta_break = st.slider(
-                        "Breaking recovery (η_break)",
-                        0.70, 1.00, 0.95, 0.01, format="%.2f", key="map_eta_break",
-                    )
-                    _map_delta_pb = st.slider(
-                        "Pb retained at end-of-life (δ)",
-                        0.80, 1.00, 0.95, 0.01, format="%.2f", key="map_delta_pb",
-                    )
-                    _map_gamma = st.slider(
-                        "Collection rate (γ)",
-                        0.30, 1.00, 0.70, 0.01, format="%.2f", key="map_gamma",
-                        help="Global default. Country-specific rates are not applied here.",
-                    )
-                with _mp_c2:
-                    _map_beta = st.slider(
-                        "Battery share of lead demand (β)",
-                        0.50, 1.00, 0.85, 0.01, format="%.2f", key="map_beta",
-                    )
-                    _map_eta_mfg = st.slider(
-                        "Manufacturing efficiency (η_mfg)",
-                        0.90, 1.00, 0.98, 0.01, format="%.2f", key="map_eta_mfg",
-                    )
-                    _map_eta_ore = st.slider(
-                        "Primary smelting recovery (η_ore)",
-                        0.80, 1.00, 0.95, 0.01, format="%.2f", key="map_eta_ore",
-                    )
+            if ADVANCED:
+                st.info(
+                    f"**{prod_dataset}** is a model estimate derived from the material-flow "
+                    "equations using trade data and mining/refining anchors. "
+                    "Adjust the parameters below to explore sensitivity."
+                )
+                with st.expander("Process parameters", expanded=False):
+                    _mp_c1, _mp_c2 = st.columns(2)
+                    with _mp_c1:
+                        _map_eta_secondary = st.slider(
+                            "Secondary smelting recovery (η_secondary)",
+                            0.80, 1.00, 0.97, 0.01, format="%.2f", key="map_eta_secondary",
+                        )
+                        _map_eta_break = st.slider(
+                            "Breaking recovery (η_break)",
+                            0.70, 1.00, 0.95, 0.01, format="%.2f", key="map_eta_break",
+                        )
+                        _map_delta_pb = st.slider(
+                            "Pb retained at end-of-life (δ)",
+                            0.80, 1.00, 0.95, 0.01, format="%.2f", key="map_delta_pb",
+                        )
+                        _map_gamma = st.slider(
+                            "Collection rate (γ)",
+                            0.30, 1.00, 0.70, 0.01, format="%.2f", key="map_gamma",
+                            help="Global default. Country-specific rates are not applied here.",
+                        )
+                    with _mp_c2:
+                        _map_beta = st.slider(
+                            "Battery share of lead demand (β)",
+                            0.50, 1.00, 0.85, 0.01, format="%.2f", key="map_beta",
+                        )
+                        _map_eta_mfg = st.slider(
+                            "Manufacturing efficiency (η_mfg)",
+                            0.90, 1.00, 0.98, 0.01, format="%.2f", key="map_eta_mfg",
+                        )
+                        _map_eta_ore = st.slider(
+                            "Primary smelting recovery (η_ore)",
+                            0.80, 1.00, 0.95, 0.01, format="%.2f", key="map_eta_ore",
+                        )
+            else:
+                st.info(
+                    f"**{prod_dataset}** is a back-of-the-envelope model estimate from the "
+                    "material-flow equations using trade data and mining/refining anchors."
+                )
 
         # ── Resolve data source and years ─────────────────────────────────────────
         if prod_dataset in _ESTIMATED_DATASETS:
@@ -2084,16 +1824,16 @@ with tab_massbal:
                 y for y in baci_df["Year"].unique() if y in _mining_years_set
             )
             _caption = (
-                f"**{prod_dataset}** — model estimate (mass-balance). "
+                f"**{prod_dataset}** — model estimate (material flow). "
                 "Values are in metric tonnes of lead content. "
                 "Scale is logarithmic. Countries with no refining anchor shown in grey."
             )
         else:
             # Use country_year_mining_refining.csv
             if prod_dataset == "Lead Mining":
-                _mr_col = "mined_bgs_t" if _mining_pref == "BGS" else "mined_usgs_t"
+                _mr_col = "mined_bgs_t" if _prod_mining_pref == "BGS" else "mined_usgs_t"
             else:  # Lead Refining
-                if _mining_pref == "BGS":
+                if _prod_mining_pref == "BGS":
                     _mr_col = "refined_bgs_t"
                 else:
                     _mining_refining_df3 = _mining_refining_df3.copy()
@@ -2113,7 +1853,7 @@ with tab_massbal:
                 else pd.DataFrame()
             )
             _prod_years = sorted(_mr_sub["year"].unique().tolist()) if not _mr_sub.empty else []
-            _src_name = "BGS" if _mining_pref == "BGS" else "USGS"
+            _src_name = "BGS" if _prod_mining_pref == "BGS" else "USGS"
             _prod_type = (
                 "mine production (t Pb in concentrates)"
                 if prod_dataset == "Lead Mining"
@@ -2135,7 +1875,7 @@ with tab_massbal:
                 if prod_dataset in _ESTIMATED_DATASETS:
                     _od = _compute_model_map_data(
                         baci_df, _mining_refining_df3, yr,
-                        _dataset_key, _pb_factors_tuple, _mining_pref,
+                        _dataset_key, _pb_factors_tuple, _prod_mining_pref,
                         _map_eta_secondary, _map_eta_break, _map_delta_pb,
                         _map_beta, _map_eta_mfg, _map_eta_ore, _map_gamma,
                     )
@@ -2145,7 +1885,8 @@ with tab_massbal:
                         _v = max(0.0, _o.get(_mk, 0.0))
                         if _v > 0:
                             _ll.append(_c)
-                            _vv.append(_v)
+                            # Model-derived (BOTEC) → confine to 2 significant figures.
+                            _vv.append(_sig2(_v))
                     return _ll, _vv
                 else:
                     _df = _mining_refining_df3[_mining_refining_df3["year"] == yr].copy()
@@ -2173,11 +1914,14 @@ with tab_massbal:
                 # ── Static map ────────────────────────────────────────────────────
                 if not prod_animate:
                     _default_yr = 2022 if 2022 in _prod_years else _prod_years[-1]
-                    prod_year = st.slider(
-                        "Year",
-                        min_value=_prod_years[0], max_value=_prod_years[-1],
-                        value=_default_yr, step=1, key="prod_static_year",
-                    )
+                    if ADVANCED:
+                        prod_year = st.slider(
+                            "Year",
+                            min_value=_prod_years[0], max_value=_prod_years[-1],
+                            value=_default_yr, step=1, key="prod_static_year",
+                        )
+                    else:
+                        prod_year = _default_yr
                     _locs, _zvals = _get_frame_data(prod_year)
                     if not _locs:
                         st.info(f"No data available for {prod_dataset} in {prod_year}.")
@@ -2327,17 +2071,38 @@ with tab_massbal:
 
             st.caption(_caption)
 
+        # Easy-mode-only page-local data-source toggle, below the map. Applies
+        # to this tab only; the global sidebar source is unchanged.
+        if not ADVANCED:
+            st.radio(
+                "Mining & refining data source (this map only)",
+                options=["BGS", "USGS"],
+                key="prod_mining_pref_easy",
+                horizontal=True,
+                help=(
+                    "Switch the production data source for this map only. "
+                    "BGS covers 1971-2023; USGS separates primary and secondary "
+                    "refined lead (2015-2023). Other tabs are unaffected."
+                ),
+            )
+
     # ── Lead Accumulation ─────────────────────────────────────────────────────
 
-    with _mb_accum:
+    if _page == "Lead Accumulation":
         _la_hdr_col, _la_lm_col = st.columns([8, 1])
         with _la_hdr_col:
             st.subheader("Lead Mass Accumulation")
-            st.caption(
-                "Annual net lead balance by country or sub-region: "
-                "mining production + imports − exports, broken down by product category. "
-                "All values in kt Pb (kilotonnes of lead content)."
-            )
+            if ADVANCED:
+                st.caption(
+                    "Annual net lead balance by country or sub-region: "
+                    "mining production + imports − exports, broken down by product category. "
+                    "All values in kt Pb (kilotonnes of lead content)."
+                )
+            else:
+                st.caption(
+                    "Shows how a country's internal lead stock has changed over the years "
+                    "due to production and trade."
+                )
         with _la_lm_col:
             with st.popover("ℹ Learn more"):
                 st.markdown(
@@ -2354,42 +2119,49 @@ with tab_massbal:
             REGION_MAP, REGIONS_ORDERED,
             sidebar_year=year, dataset=_dataset_key,
             pb_factors=pb_factors, mining_source=_mining_pref,
+            major_region_map=MAJOR_REGION_MAP,
+            major_regions_ordered=MAJOR_REGIONS_ORDERED,
+            advanced=ADVANCED,
         )
 
 
     # ── Process Estimates ─────────────────────────────────────────────────────
 
-    with _mb_process:
+    if _page == "Material Flow (Beta)":
+        st.warning(
+            "This is only based on BOTEC-type calculations, and has not been reconciled "
+            "against external data sources. These numbers also do not account for "
+            "informal vs. formal dynamics, which can greatly affect the efficiency values "
+            "at every step.",
+            icon="⚠️",
+        )
         _pe_desc_col, _pe_lm_col = st.columns([8, 1])
         with _pe_desc_col:
-            st.write(
-                "Material-flow Sankey for a selected country. Shows how lead flows "
-                "through collection, breaking, secondary smelting, manufacturing, and "
-                "installation, with diagnostic flags where the model detects imbalances. "
-                "Available for many countries, but **not reconciled against external "
-                "observations** — see the **Mass Balance** tab for a fully reconciled "
-                "model (India only for now)."
-            )
+            if ADVANCED:
+                st.write(
+                    "Material-flow Sankey for a selected country. Shows how lead flows "
+                    "through collection, breaking, secondary smelting, manufacturing, and "
+                    "installation."
+                )
+            else:
+                st.write(
+                    "Shows how lead flows through collection, breaking, secondary smelting, "
+                    "manufacturing, and installation."
+                )
         with _pe_lm_col:
             with st.popover("ℹ Learn more"):
                 st.markdown(
                     "**Data sources:** BACI trade flows + BGS/USGS production + "
                     "Eurostat collection data (where available).\n\n"
+                    "**Experimental model.** Values are estimates derived from trade and "
+                    "production data (BOTEC-type calculations) and are not reconciled against "
+                    "external observations. Treat them as indicative, not precise.\n\n"
                     "**How it's used:** The model chains five equations "
                     "(collection → breaking → secondary smelting → manufacturing → "
                     "installation) using BACI as the trade anchor and production data as "
-                    "the refining anchor. Process efficiencies (η) scale each stage. "
-                    "Diagnostic flags highlight:\n"
-                    "- **D2:** Break-to-smelt ratio (>1.3 = excess scrap leaving the country)\n"
-                    "- **D3:** Installation gap (model vs. reported installation)\n"
-                    "- **D5:** Feedstock coverage ratio (unexplained smelting feedstock)\n\n"
-                    "**Process Estimates vs. Mass Balance:** This tab covers many "
-                    "countries using a single forward pass with fixed parameters. The "
-                    "**Mass Balance** tab additionally reconciles against an external "
-                    "stock series and USGS primary/secondary refining splits via a "
-                    "constrained optimizer, so its parameters are calibrated rather than "
-                    "assumed. Treat Mass Balance results as more reliable for the "
-                    "countries it covers."
+                    "the refining anchor. Process efficiencies (η) scale each stage.\n\n"
+                    "This tab covers many countries using a single forward pass with "
+                    "fixed parameters — treat the outputs as indicative, not calibrated."
                 )
         _mining_refining_df = _load_mining_refining()
         _eurostat_df = _load_eurostat_collection()
@@ -2404,31 +2176,13 @@ with tab_massbal:
             pb_factors      = pb_factors,
             mining_source   = _mining_pref,
             eurostat_df     = _eurostat_df,
+            advanced        = ADVANCED,
         )
 
 
     # ── Economy Snapshot ──────────────────────────────────────────────────────
 
-    with _mb_snapshot:
-        _es_desc_col, _es_lm_col = st.columns([8, 1])
-        with _es_desc_col:
-            st.write(
-                "Summary scorecard of a country's lead recycling economy. "
-                "Combines trade-derived and model-estimated metrics to characterize "
-                "where a country sits in the global recycling system."
-            )
-        with _es_lm_col:
-            with st.popover("ℹ Learn more"):
-                st.markdown(
-                    "**Data sources:** BACI trade flows + BGS/USGS production + "
-                    "mass-balance model outputs.\n\n"
-                    "**How it's used:** Key metrics (collection rate, secondary smelting "
-                    "share, battery self-sufficiency, etc.) are derived from the same "
-                    "mass-balance equations as the Process Estimates tab, but presented "
-                    "as a compact summary rather than a full Sankey. "
-                    "Use this tab to quickly compare countries or identify which stage "
-                    "in the recycling loop is under-performing."
-                )
+    if _page == "Recycling Economy Snapshot":
         from visualizations.mass_balance_sankey import render_economy_snapshot_tab
         _mining_refining_df2 = _load_mining_refining()
         render_economy_snapshot_tab(
@@ -2440,404 +2194,12 @@ with tab_massbal:
             dataset         = _dataset_key,
             pb_factors      = pb_factors,
             mining_source   = _mining_pref,
+            advanced        = ADVANCED,
         )
 
-
-    # ── Mass Balance (India v4 three-stage chain) ───────────────────────────
-
-    with _mb_mass_balance:
-        st.warning(
-            "🚧 **Under Construction** — The Mass Balance tab is an active "
-            "work-in-progress and not ready for general use. The India "
-            "calibration is still being refined (smelt-vs-USGS fit, install "
-            "equality feasibility, and parameter rail diagnostics). Numbers "
-            "below may change."
-        )
-        render_india_v4_tab()
-
-        with st.expander(
-            "v3 calibration explorer (legacy fallback)",
-            expanded=False,
-        ):
-            st.caption(
-                "The v3 India calibration explorer is preserved as a fallback. "
-                "It uses the previous two-stage chain (no explicit refine stage; "
-                "780199 in FEED; γ, β, and the φ's all time-varying / fitted) "
-                "and remains the working reference for cross-country scenario "
-                "work until v4 is extended beyond India."
-            )
-            render_india_calibration_explorer_tab(
-                baci_df       = baci_df,
-                mining_df     = _load_mining_refining(),
-                pb_factors    = pb_factors,
-                active_years  = active_years,
-                time_period   = time_period,
-                mining_source = _mining_pref,
-                dataset_key   = _dataset_key,
-            )
+    _easy_assumptions_footer()
 
 
-# ── India Lead Model tab (hidden — preserved for later re-activation) ─────────
-# To restore: add "India Lead Model" as a 7th entry in st.tabs() above,
-# capture it as `tab_india`, wrap the block below in `with tab_india:`,
-# and remove the `if False:` line.
-if False:  # noqa: dead-code  pylint: disable=using-constant-test
-    st.subheader("India Lead-Acid Battery Mass Balance Model")
-    st.caption(
-        "Estimates formal vs. informal recycling pathways using USGS production data, "
-        "BACI trade flows, and a 7-parameter mass balance. τ = 3 yr fixed battery lifespan lag."
-    )
-
-    # ── Data loading ──────────────────────────────────────────────────────────
-    _india_csvs = _load_india_csvs_cached()
-    _india_net_trade, _india_trade_warnings = _build_india_net_trade_cached(baci_df)
-
-    _tau = st.slider("τ — battery lifespan lag (years)", 2, 7, 4, 1, key="ind_tau")
-
-    _india_data, _india_valid_years, _india_missing_lag = india_prepare_inputs(
-        _india_csvs, _india_net_trade, tau=_tau
-    )
-
-    if _india_trade_warnings:
-        with st.expander("BACI data warnings", expanded=False):
-            for _w in _india_trade_warnings:
-                st.warning(_w)
-
-    if _india_missing_lag:
-        for _y, _lag_y in sorted(_india_missing_lag.items()):
-            st.error(
-                f"Install data missing for year {_lag_y}. "
-                f"Required for τ={_tau} lag (model year {_y})."
-            )
-
-    if not _india_valid_years:
-        st.error(
-            "No valid model years available. "
-            f"Provide install estimates covering lag years (model year − {_tau})."
-        )
-    else:
-        # Note about install data interpretation
-        _install_vals = list(_india_csvs["install"]["value"])
-        if _install_vals and max(_install_vals) > 2e6:
-            st.info(
-                "**Note — install estimates appear to be total installed stock, not annual flow.** "
-                "The install CSV values (~{:,.0f}–{:,.0f} t Pb) are consistent with India's "
-                "total lead-acid battery stock, not annual new installations (~500k–1,000k t/yr). "
-                "Large residuals in Section 1 reflect this mismatch. "
-                "To fix: provide annual installation flow in the CSV, or divide stock values "
-                "by average battery lifetime (~4 years).".format(
-                    min(_install_vals), max(_install_vals)
-                )
-            )
-
-        # ── Parameters ────────────────────────────────────────────────────────
-        st.markdown(
-            "**Model Parameters** — Adjust sliders then click **Solve** to re-fit γ_F(t)."
-        )
-        _pc1, _pc2, _pc3, _pc4 = st.columns(4)
-        with _pc1:
-            _p_gamma_disp = st.slider(
-                "γ_disposal (disposal rate)", 0.00, 0.15, 0.05, 0.005, format="%.3f",
-                key="ind_gamma_disposal",
-            )
-            _p_eta_smelt_I = st.slider(
-                "η_smelt_I (informal smelting)", 0.40, 0.95, 0.70, 0.01,
-                key="ind_eta_smelt_i",
-            )
-        with _pc2:
-            _p_eta_break_F = st.slider(
-                "η_break_F (formal breaking)", 0.80, 1.00, 0.95, 0.01,
-                key="ind_eta_break_f",
-            )
-            _p_eta_refine = st.slider(
-                "η_refine (secondary refining)", 0.95, 1.00, 0.99, 0.005, format="%.3f",
-                key="ind_eta_refine",
-            )
-        with _pc3:
-            _p_eta_break_I = st.slider(
-                "η_break_I (informal breaking)", 0.40, 0.95, 0.70, 0.01,
-                key="ind_eta_break_i",
-            )
-            _p_beta = st.slider(
-                "β (battery share of Pb demand)", 0.60, 0.95, 0.75, 0.01,
-                key="ind_beta",
-            )
-        with _pc4:
-            _p_eta_smelt_F = st.slider(
-                "η_smelt_F (formal smelting)", 0.85, 1.00, 0.97, 0.01,
-                key="ind_eta_smelt_f",
-            )
-            _p_lead_loss = st.slider(
-                "lead_loss_rate", 0.00, 0.05, 0.02, 0.005, format="%.3f",
-                key="ind_lead_loss",
-            )
-
-        _pgam_col, _pphi1, _pphi2 = st.columns(3)
-        with _pgam_col:
-            _p_gamma_F = st.slider(
-                "γ_F (formal collection rate)", 0.00, 1.00, 0.50, 0.01,
-                key="ind_gamma_f",
-            )
-        with _pphi1:
-            _p_phi_B = st.slider(
-                "φ_B (informal → formal breaking)", 0.00, 1.00, 0.70, 0.01,
-                key="ind_phi_b",
-            )
-        with _pphi2:
-            _p_phi_S = st.slider(
-                "φ_S (informal → formal smelting)", 0.00, 1.00, 0.70, 0.01,
-                key="ind_phi_s",
-            )
-
-        _india_fixed_params = {
-            "gamma_disposal": _p_gamma_disp,
-            "gamma_F": _p_gamma_F,
-            "eta_break_F": _p_eta_break_F,
-            "eta_break_I": _p_eta_break_I,
-            "eta_smelt_F": _p_eta_smelt_F,
-            "eta_smelt_I": _p_eta_smelt_I,
-            "eta_refine": _p_eta_refine,
-            "beta": _p_beta,
-            "lead_loss_rate": _p_lead_loss,
-            "phi_B": _p_phi_B,
-            "phi_S": _p_phi_S,
-        }
-
-        # ── Forward model (runs on every slider change) ────────────────────────
-        _india_df = india_forward_model(
-            _india_data, _india_valid_years, _india_fixed_params
-        )
-
-        st.divider()
-
-        # ── Section 1: Model fit summary ──────────────────────────────────────
-        st.markdown("#### 1 — Model Fit Summary")
-
-        _s1_cols = [
-            "year", "gamma_F", "gamma_I", "phi_B", "phi_S",
-            "residual_sec_refine", "residual_install",
-        ]
-        _s1_df = _india_df[_s1_cols].copy()
-
-        def _residual_row_style(row):
-            styles = [""] * len(row)
-            _pairs = [
-                ("residual_sec_refine",
-                 _india_data[int(row["year"])]["secondary_refined_obs"]),
-                ("residual_install",
-                 _india_data[int(row["year"])]["install_obs"]),
-            ]
-            for _col, _obs in _pairs:
-                if _col in row.index and _obs != 0:
-                    _pct = abs(row[_col] / _obs)
-                    _ci = list(row.index).index(_col)
-                    if _pct < 0.05:
-                        styles[_ci] = "background-color: #c6efce; color: #276221"
-                    elif _pct < 0.15:
-                        styles[_ci] = "background-color: #ffeb9c; color: #7d6008"
-                    else:
-                        styles[_ci] = "background-color: #ffc7ce; color: #9c0006"
-            return styles
-
-        _s1_fmt = {
-            "gamma_F": "{:.4f}", "gamma_I": "{:.4f}",
-            "phi_B": "{:.4f}", "phi_S": "{:.4f}",
-            "residual_sec_refine": "{:,.0f}",
-            "residual_install": "{:,.0f}",
-        }
-        st.dataframe(
-            _s1_df.style.apply(_residual_row_style, axis=1).format(_s1_fmt),
-            hide_index=True,
-            use_container_width=True,
-        )
-        st.caption(
-            f"φ_B = {_p_phi_B:.4f}  |  φ_S = {_p_phi_S:.4f}  "
-            "(year-invariant — set via sliders)"
-        )
-        st.caption(
-            "Residual colours: green < 5% of observed | amber < 15% | red ≥ 15%"
-        )
-
-        st.divider()
-
-        # ── Section 2: Stage-by-stage mass flow ───────────────────────────────
-        st.markdown("#### 2 — Stage-by-Stage Mass Flow (tonnes Pb)")
-
-        _s2_cols = [
-            # Use / collection stage
-            "year", "USE_eol", "net_trade_use",
-            "COLL_F", "COLL_I", "DISPOSED", "net_trade_collection",
-            # Breaking stage
-            "BREAK_F_out", "BREAK_I_out",
-            # Smelting stage
-            "net_trade_scrap", "SMELT_F_out", "SMELT_I_out",
-            # Secondary refining
-            "net_trade_smelted", "SEC_REFINED",
-            # Refined pool and manufacturing
-            "net_trade_refined", "POOL", "BATTERY_MFG", "NON_BATTERY", "implied_install",
-        ]
-        _s2_df = _india_df[_s2_cols].copy()
-        _s2_fmt = {c: "{:+,.0f}" if c.startswith("net_trade") else "{:,.0f}"
-                   for c in _s2_cols if c != "year"}
-        st.dataframe(
-            _s2_df.style.format(_s2_fmt),
-            hide_index=True,
-            use_container_width=True,
-        )
-        st.caption(
-            "net_trade columns: positive = net imports, negative = net exports. "
-            "net_trade_use = batteries (850710/20); collection = waste batteries (854810); "
-            "scrap = 780200; smelted = 780199; refined = 780110/91 + 282410/90."
-        )
-
-        st.divider()
-
-        # ── Section 3: Charts ──────────────────────────────────────────────────
-        st.markdown("#### 3 — Charts")
-
-        # Chart A — Collection split
-        _fig_a = go.Figure()
-        _fig_a.add_trace(go.Bar(
-            name="Formal collected",
-            x=_india_df["year"], y=_india_df["COLL_F"],
-            marker_color="#1E88E5",
-        ))
-        _fig_a.add_trace(go.Bar(
-            name="Informal collected",
-            x=_india_df["year"], y=_india_df["COLL_I"],
-            marker_color="#FB8C00",
-        ))
-        _fig_a.add_trace(go.Bar(
-            name="Disposed (no recycling)",
-            x=_india_df["year"], y=_india_df["DISPOSED"],
-            marker_color="#E53935",
-        ))
-        _fig_a.update_layout(
-            barmode="stack",
-            title="A — Collection Split",
-            xaxis_title="Year",
-            yaxis_title="tonnes Pb",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
-            height=380,
-        )
-        st.plotly_chart(_fig_a, use_container_width=True)
-
-        # Chart B — Lead losses by stage
-        _fig_b = go.Figure()
-        _fig_b.add_trace(go.Bar(
-            name="Degradation loss",
-            x=_india_df["year"], y=_india_df["degradation_loss"],
-            marker_color="#9E9E9E",
-        ))
-        _fig_b.add_trace(go.Bar(
-            name="Disposal",
-            x=_india_df["year"], y=_india_df["DISPOSED"],
-            marker_color="#E53935",
-        ))
-        _fig_b.add_trace(go.Bar(
-            name="Breaking losses",
-            x=_india_df["year"], y=_india_df["BREAK_loss"],
-            marker_color="#FB8C00",
-        ))
-        _fig_b.add_trace(go.Bar(
-            name="Smelting losses",
-            x=_india_df["year"], y=_india_df["SMELT_loss"],
-            marker_color="#F9A825",
-        ))
-        _fig_b.add_trace(go.Bar(
-            name="Refining losses",
-            x=_india_df["year"], y=_india_df["SEC_REFINE_loss"],
-            marker_color="#FDD835",
-        ))
-        _fig_b.add_trace(go.Bar(
-            name="Non-battery sink",
-            x=_india_df["year"], y=_india_df["NON_BATTERY"],
-            marker_color="#43A047",
-        ))
-        _fig_b.update_layout(
-            barmode="stack",
-            title="B — Lead Losses by Stage",
-            xaxis_title="Year",
-            yaxis_title="tonnes Pb",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
-            height=380,
-        )
-        st.plotly_chart(_fig_b, use_container_width=True)
-
-        # Chart C — Model vs observed
-        _fig_c = go.Figure()
-        _fig_c.add_trace(go.Scatter(
-            name="Implied install (model)",
-            x=_india_df["year"], y=_india_df["implied_install"],
-            mode="lines+markers",
-            line=dict(color="#1E88E5", width=2),
-        ))
-        _fig_c.add_trace(go.Scatter(
-            name="Install estimate (CSV)",
-            x=_india_df["year"], y=_india_df["install_obs"],
-            mode="lines+markers",
-            line=dict(color="#1E88E5", width=2, dash="dash"),
-        ))
-        _fig_c.add_trace(go.Scatter(
-            name="Sec. refined (model)",
-            x=_india_df["year"], y=_india_df["SEC_REFINED"],
-            mode="lines+markers",
-            line=dict(color="#43A047", width=2),
-        ))
-        _fig_c.add_trace(go.Scatter(
-            name="Sec. refined (observed)",
-            x=_india_df["year"], y=_india_df["secondary_refined_obs"],
-            mode="lines+markers",
-            line=dict(color="#43A047", width=2, dash="dash"),
-        ))
-        _fig_c.update_layout(
-            title="C — Model vs Observed",
-            xaxis_title="Year",
-            yaxis_title="tonnes Pb",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
-            height=380,
-        )
-        st.plotly_chart(_fig_c, use_container_width=True)
-
-        st.divider()
-
-        # ── Section 4: Informal economy diagnostic ─────────────────────────────
-        st.markdown("#### 4 — Informal Economy Diagnostic")
-
-        _avg_gamma_I = float(_india_df["gamma_I"].mean())
-        _avg_gamma_total = float(_india_df["gamma_total"].mean())
-        _avg_coll_I = float(_india_df["COLL_I"].mean())
-        _avg_break_I = float(_india_df["BREAK_I_in"].mean())
-        _avg_smelt_I = float(_india_df["SMELT_I_in"].mean())
-        _avg_informal = _avg_coll_I + _avg_break_I + _avg_smelt_I
-
-        _all_res = np.concatenate([
-            _india_df["residual_sec_refine"].values,
-            _india_df["residual_install"].values,
-        ])
-        _rmse = float(np.sqrt(np.mean(_all_res ** 2)))
-
-        _infml_share = (
-            f"{100 * _avg_gamma_I / _avg_gamma_total:.1f}%"
-            if _avg_gamma_total > 0 else "—"
-        )
-
-        _d1, _d2 = st.columns(2)
-        with _d1:
-            st.metric("Informal share of collection (avg)", _infml_share)
-            st.metric(
-                "Informal batteries → formal breaking (φ_B)",
-                f"{100 * _p_phi_B:.1f}%",
-            )
-            st.metric(
-                "Informal scrap → formal smelting (φ_S)",
-                f"{100 * _p_phi_S:.1f}%",
-            )
-        with _d2:
-            st.metric(
-                "Avg. lead through informal pathway",
-                f"{_avg_informal / 1000:.1f} kt Pb",
-            )
-            st.metric("RMSE (both residuals)", f"{_rmse:,.0f} t Pb")
-
-    st.caption("All values in metric tonnes of lead (t Pb).")
+# ── Literature Stats page ───────────────────────────────────────
+if _page == "Literature Stats":
+    render_literature()

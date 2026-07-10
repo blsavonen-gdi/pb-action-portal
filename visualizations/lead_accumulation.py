@@ -17,11 +17,31 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import math
+
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
 DATA_DIR = Path(__file__).parent.parent / "data"
+
+
+def _sig2(v: float) -> float:
+    """Round a model-derived value to 2 significant figures (UI display)."""
+    if v is None or v == 0 or (isinstance(v, float) and math.isnan(v)):
+        return 0.0
+    exp = math.floor(math.log10(abs(v)))
+    factor = 10 ** (exp - 1)
+    return round(v / factor) * factor
+
+
+def _fmt_kt(kt: float) -> str:
+    """Signed 2-significant-figure kt string, e.g. '+460' or '+8.3'."""
+    r = _sig2(kt)
+    if abs(r) >= 10 or r == round(r):
+        return f"{r:+,.0f}"
+    return f"{r:+,.1f}"
 
 # ── HS code metadata ──────────────────────────────────────────────────────────
 # lo / hi define the adjustable range; default = midpoint (or fixed value).
@@ -267,6 +287,9 @@ def _cumulative_line_chart(annual_df: pd.DataFrame, sidebar_year: int, label: st
             running += net
             cumulative.append(running)
 
+    # Confine displayed values to 2 significant figures (model-derived).
+    cumulative = [None if v is None else _sig2(v) for v in cumulative]
+
     fig = go.Figure()
 
     # Green / red area fills
@@ -334,7 +357,7 @@ def _annual_bar_chart(annual_df: pd.DataFrame, sidebar_year: int, label: str) ->
     """Annual net lead balance as colored bars (green = gain, red = loss)."""
     df = annual_df.sort_values("Year")
     years = df["Year"].tolist()
-    totals_kt = [v / 1000 for v in df["Total"].tolist()]
+    totals_kt = [_sig2(v / 1000) for v in df["Total"].tolist()]
 
     colors = [
         "#FB8C00" if y == sidebar_year else ("#43A047" if v >= 0 else "#E53935")
@@ -372,7 +395,7 @@ def _bar_chart(annual_df: pd.DataFrame, selected_year: int, label: str) -> go.Fi
 
     for cat in CATEGORIES_ORDERED:
         val = float(row[cat].values[0]) if cat in row.columns else 0.0
-        val_kt = val / 1000
+        val_kt = _sig2(val / 1000)
         total_kt += val_kt
         fig.add_trace(go.Bar(
             x=[cat], y=[val_kt],
@@ -385,7 +408,7 @@ def _bar_chart(annual_df: pd.DataFrame, selected_year: int, label: str) -> go.Fi
 
     annotations = [
         dict(
-            text=f"Total net: {total_kt:+,.1f} kt Pb",
+            text=f"Total net: {_fmt_kt(total_kt)} kt Pb",
             x=0.99, y=0.97, xref="paper", yref="paper",
             showarrow=False, align="right",
             font=dict(size=13, color="#333"),
@@ -411,6 +434,68 @@ def _bar_chart(annual_df: pd.DataFrame, selected_year: int, label: str) -> go.Fi
         margin=dict(l=60, r=20, t=50, b=80),
         plot_bgcolor="#fafafa",
         annotations=annotations,
+    )
+    return fig
+
+
+def _net_balance_world_map(
+    baci: pd.DataFrame,
+    mined_bgs: pd.DataFrame,
+    mined_usgs: pd.DataFrame,
+    mining_source: str,
+    year: int,
+    pb_factors: dict[int, float],
+) -> go.Figure:
+    """
+    Choropleth of every country's net lead balance for *year*:
+        net = mine production + Pb imports - Pb exports   (tonnes Pb -> kt Pb)
+    Diverging red/green scale (red = net loser, green = net gainer), centered on
+    zero and clipped at the 95th percentile of |value| for contrast.
+    """
+    t = baci[baci["Year"] == year].copy()
+    if t.empty:
+        return go.Figure()
+    t["pb_t"] = t["Product"].map(pb_factors).fillna(0.70) * t["Quantity"]
+    imp = t.groupby("Importer")["pb_t"].sum()
+    exp = t.groupby("Exporter")["pb_t"].sum()
+    net = imp.subtract(exp, fill_value=0.0)
+
+    # Mine production: preferred source, filled per-country from the other.
+    pref, alt = (mined_bgs, mined_usgs) if mining_source == "BGS" else (mined_usgs, mined_bgs)
+    pref_y = pref[pref["year"] == year].groupby("country_baci")["value_metric_t"].sum()
+    alt_y = alt[alt["year"] == year].groupby("country_baci")["value_metric_t"].sum()
+    mining = pref_y.combine_first(alt_y)
+
+    total_kt = net.add(mining, fill_value=0.0) / 1000.0
+    total_kt = total_kt[total_kt.abs() > 1e-9]
+    if total_kt.empty:
+        return go.Figure()
+
+    countries = list(total_kt.index)
+    vals = [_sig2(float(v)) for v in total_kt.values]
+    _bound = float(np.percentile(np.abs(vals), 95))
+    if _bound <= 0:
+        _bound = max(abs(min(vals)), abs(max(vals)), 1e-6)
+
+    fig = go.Figure(go.Choropleth(
+        locations=countries,
+        z=vals,
+        locationmode="country names",
+        colorscale="RdYlGn",
+        zmid=0, zmin=-_bound, zmax=_bound,
+        colorbar=dict(title="kt Pb", len=0.7, thickness=14),
+        hovertemplate="%{location}: %{z:+,.1f} kt Pb<extra></extra>",
+        marker_line_color="#ffffff", marker_line_width=0.4,
+    ))
+    fig.update_layout(
+        title=dict(text=f"Net Lead Balance by Country — {year}", x=0.5, font=dict(size=14)),
+        height=430,
+        margin={"r": 0, "t": 40, "l": 0, "b": 0},
+        geo=dict(
+            showframe=False, showcoastlines=True, coastlinecolor="#aaaaaa",
+            showland=True, landcolor="#d8d8d8", showocean=True, oceancolor="#e3f2fd",
+            showlakes=False, projection_type="natural earth",
+        ),
     )
     return fig
 
@@ -554,6 +639,9 @@ def render_lead_accumulation_tab(
     dataset: str = "hs12",
     pb_factors: dict[int, float] | None = None,
     mining_source: str = "BGS",
+    major_region_map: dict[str, str] | None = None,
+    major_regions_ordered: list[str] | None = None,
+    advanced: bool = True,
 ) -> None:
     """Entry point — call from within a `with tab:` block in streamlit_app.py."""
 
@@ -565,29 +653,24 @@ def render_lead_accumulation_tab(
         set(master_baci["Exporter"].unique()) | set(master_baci["Importer"].unique())
     )
 
-    # ── Country / sub-region selector ────────────────────────────────────────
+    # ── Country / region selector (regions first, then countries A-Z) ─────────
+    _major = list(major_regions_ordered or [])
+    _regions_all = _major + list(regions_ordered)
+    _sel_options = _regions_all + all_countries
     sel_col, _ = st.columns([2, 3])
     with sel_col:
-        sel_type = st.radio(
-            "View by",
-            ["Country", "Subregion"],
-            horizontal=True,
-            key="accum_sel_type",
+        _default_idx = _sel_options.index("Ghana") if "Ghana" in _sel_options else 0
+        selection = st.selectbox(
+            "Select country or region",
+            _sel_options,
+            index=_default_idx,
+            key="accum_selection",
+            help="Regions (continents and UN sub-regions) are listed first, then countries A-Z.",
         )
-        if sel_type == "Country":
-            default_idx = all_countries.index("Ghana") if "Ghana" in all_countries else 0
-            selection = st.selectbox(
-                "Select country", all_countries,
-                index=default_idx,
-                key="accum_country",
-            )
-            is_region = False
-        else:
-            selection = st.selectbox(
-                "Select sub-region", regions_ordered,
-                key="accum_region",
-            )
-            is_region = True
+    is_region = selection in _regions_all
+    # Resolve the region membership map (major regions use their own map).
+    if is_region and selection in _major and major_region_map:
+        region_map = major_region_map
 
     # ── Resolve mining dataset (preferred source with auto-fallback) ──────────
     _mine_countries = (
@@ -650,56 +733,70 @@ def render_lead_accumulation_tab(
         "Orange diamond marks the year selected in the sidebar."
     )
 
-    # ── Chart 2: Annual net lead balance (bar) ────────────────────────────────
-    st.plotly_chart(
-        _annual_bar_chart(annual_df, selected_year, selection),
-        use_container_width=True,
-    )
-    st.caption(
-        "Each bar shows one year's net lead balance (mining + imports − exports). "
-        "Green = net inflow; red = net outflow. Orange = sidebar-selected year."
-    )
-
-    # ── Chart 3: Category breakdown for selected year ─────────────────────────
-    st.plotly_chart(
-        _bar_chart(annual_df, selected_year, selection),
-        use_container_width=True,
-    )
-    st.caption(
-        "Each bar shows one category's net contribution to the total balance in the selected year "
-        f"({selected_year}, set via the sidebar Year slider). "
-        "Mining Outputs bar = BGS mine production + net ore (HS 260700) trade."
-    )
-
-    # ── Key metrics ───────────────────────────────────────────────────────────
-    yr_row = annual_df[annual_df["Year"] == selected_year]
-    if not yr_row.empty:
-        metric_cols = st.columns(len(CATEGORIES_ORDERED) + 1)
-        total_val = float(yr_row["Total"].values[0])
-        with metric_cols[0]:
-            st.metric("Total Net", f"{total_val/1000:+.1f} kt Pb")
-        for i, cat in enumerate(CATEGORIES_ORDERED):
-            with metric_cols[i + 1]:
-                val = float(yr_row[cat].values[0]) if cat in yr_row.columns else 0.0
-                st.metric(cat[:12], f"{val/1000:+.1f} kt Pb")
-
-    # ── Breakdown table ───────────────────────────────────────────────────────
-    st.subheader(f"HS-Code Breakdown — {selection}, {selected_year}")
-    table_df = _build_table(
-        hs_year_df, mined_df, selection, is_region, region_map, selected_year
-    )
-
-    if table_df.empty:
-        st.info("No trade or mining data for this selection in the selected year.")
-    else:
-        st.dataframe(
-            _style_table(table_df),
+    # ── Annual net lead balance bar (Advanced only) ───────────────────────────
+    if advanced:
+        st.plotly_chart(
+            _annual_bar_chart(annual_df, selected_year, selection),
             use_container_width=True,
-            height=min(600, 40 + len(table_df) * 36),
+        )
+        st.caption(
+            "Each bar shows one year's net lead balance (mining + imports − exports). "
+            "Green = net inflow; red = net outflow. Orange = sidebar-selected year."
         )
 
-    st.caption(
-        "Subtotal rows (bold gray) summarise each category. "
-        "Net color: darker green = larger gain; darker red = larger loss. "
-        "All values in kt Pb (kilotonnes of lead content)."
-    )
+    # ── Category breakdown (half) + global net-balance map (half) ─────────────
+    _cat_col, _map_col = st.columns(2)
+    with _cat_col:
+        st.plotly_chart(
+            _bar_chart(annual_df, selected_year, selection),
+            use_container_width=True,
+        )
+        st.caption(
+            "Each bar shows one category's net contribution to the total balance in the "
+            f"selected year ({selected_year}, set via the sidebar Year slider). "
+            "Mining Outputs = BGS/USGS mine production + net ore (HS 260700) trade."
+        )
+    with _map_col:
+        st.plotly_chart(
+            _net_balance_world_map(
+                master_baci, _mined_bgs, _mined_usgs, mining_source,
+                selected_year, pb_factors,
+            ),
+            use_container_width=True,
+        )
+        st.caption(
+            f"Net lead balance by country for {selected_year}: "
+            "**green** = net gainer (more lead in than out), **red** = net loser. "
+            "Scale clipped at the 95th percentile of magnitude for contrast."
+        )
+
+    # ── Key metrics + HS-code breakdown table (Advanced only) ─────────────────
+    if advanced:
+        yr_row = annual_df[annual_df["Year"] == selected_year]
+        if not yr_row.empty:
+            metric_cols = st.columns(len(CATEGORIES_ORDERED) + 1)
+            total_val = float(yr_row["Total"].values[0])
+            with metric_cols[0]:
+                st.metric("Total Net", f"{_fmt_kt(total_val/1000)} kt Pb")
+            for i, cat in enumerate(CATEGORIES_ORDERED):
+                with metric_cols[i + 1]:
+                    val = float(yr_row[cat].values[0]) if cat in yr_row.columns else 0.0
+                    st.metric(cat[:12], f"{_fmt_kt(val/1000)} kt Pb")
+
+        st.subheader(f"HS-Code Breakdown — {selection}, {selected_year}")
+        table_df = _build_table(
+            hs_year_df, mined_df, selection, is_region, region_map, selected_year
+        )
+        if table_df.empty:
+            st.info("No trade or mining data for this selection in the selected year.")
+        else:
+            st.dataframe(
+                _style_table(table_df),
+                use_container_width=True,
+                height=min(600, 40 + len(table_df) * 36),
+            )
+        st.caption(
+            "Subtotal rows (bold gray) summarise each category. "
+            "Net color: darker green = larger gain; darker red = larger loss. "
+            "All values in kt Pb (kilotonnes of lead content)."
+        )

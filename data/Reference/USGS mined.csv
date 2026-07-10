@@ -141,7 +141,7 @@ Laos,2018,340,,2022,mine_production_pb_content,"Lead, mine, Pb contente,",kilogr
 Laos,2019,250,,2022,mine_production_pb_content,"Lead, mine, Pb contente,",kilograms,converted_from_kg,3,myb3-2022-Laos-ert.xlsx
 Laos,2020,100,,2022,mine_production_pb_content,"Lead, mine, Pb contente,",kilograms,converted_from_kg,2,myb3-2022-Laos-ert.xlsx
 Laos,2021,170,,2022,mine_production_pb_content,"Lead, mine, Pb contente,",kilograms,converted_from_kg,2,myb3-2022-Laos-ert.xlsx
-Laos,2022,190,,2022,mine_production_pb_content,"Lead, mine, Pb contente,",kilograms,converted_from_kg,1,myb3-2022-Laos-ert.xlsx
+Laos,2022,1900,,2022,mine_production_pb_content,"Lead, mine, Pb contente,",kilograms,converted_from_kg,1,myb3-2022-Laos-ert.xlsx
 Macedonia,2015,28698,,2017,mine_production_pb_content,"Lead, mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2017-18-mk.xls
 Macedonia,2016,23487,,2017,mine_production_pb_content,"Lead, mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,2,myb3-2017-18-mk.xls
 Macedonia,2017,24823,,2017,mine_production_pb_content,"Lead, mine, concentrate, Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,1,myb3-2017-18-mk.xls
@@ -199,7 +199,7 @@ North Macedonia,2018,32140,,2022,mine_production_pb_content,"Lead, mine, concent
 North Macedonia,2019,33700,,2022,mine_production_pb_content,"Lead, mine, concentrate, Pb content",kilograms,converted_from_kg,3,myb3-2022-North_Macedonia-advrel.xlsx
 North Macedonia,2020,35000,,2022,mine_production_pb_content,"Lead, mine, concentrate, Pb content",kilograms,converted_from_kg,2,myb3-2022-North_Macedonia-advrel.xlsx
 North Macedonia,2021,33400,,2022,mine_production_pb_content,"Lead, mine, concentrate, Pb content",kilograms,converted_from_kg,2,myb3-2022-North_Macedonia-advrel.xlsx
-North Macedonia,2022,32600,,2022,mine_production_pb_content,"Lead, mine, concentrate, Pb content",kilograms,converted_from_kg,1,myb3-2022-North_Macedonia-advrel.xlsx
+North Macedonia,2022,32600,e,2022,mine_production_pb_content,"Lead, mine, concentrate, Pb content",kilograms,converted_from_kg,1,myb3-2022-North_Macedonia-advrel.xlsx
 Pakistan,2016,1280,e,2019,mine_production_pb_content,"Lead > Mine, concentrates > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,3,myb3-2019-pakistan.xlsx
 Pakistan,2017,3250,e,2020,mine_production_pb_content,"Lead > Mine, concentrates > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,5,myb3-2020-21-pakistan.xlsx
 Pakistan,2018,5140,e,2022,mine_production_pb_content,"Lead > Mine, concentrates > Pb content","Metric tons, gross weight, unless otherwise specified",metric_tonnes,7,myb3-2022-Pakistan-ert.xlsx

@@ -41,8 +41,15 @@ _METAL_DEFAULT_FACTOR = 0.97
 # Used battery HS codes (HS12 + HS22 equivalent)
 _USED_HS = {854810, 854911}
 
-# Feed HS codes for imp_feed / exp_feed
-_FEED_HS = {780110, 780191}
+# Refined "feed" HS codes — refined-lead equivalents that enter the refined
+# pool post-refining and are subject to beta (matches the India model's FEED_HS:
+# 780110 refined unwrought, 780191 antimonial, 282410/282490 lead oxides).
+_FEED_HS = {780110, 780191, 282410, 282490}
+
+# Crude HS code — "other unwrought lead" (780199). Per the India model this is
+# CRUDE: it attaches between smelting and refining, i.e. it is refined (with a
+# recovery loss) before joining the refined pool — NOT a refined feed.
+_CRUDE_HS = {780199}
 
 
 # ---------------------------------------------------------------------------
@@ -186,8 +193,16 @@ def _get_mining_row(
 # ---------------------------------------------------------------------------
 
 def _fmt(v: float) -> str:
-    """Format a tonnage value with commas."""
-    return f"{v:,.0f}"
+    """Format a tonnage value rounded to 2 significant figures, with commas."""
+    import math
+    if v is None or (isinstance(v, float) and math.isnan(v)) or v == 0:
+        return "0"
+    exp = math.floor(math.log10(abs(v)))
+    factor = 10 ** (exp - 1)              # keep 2 significant figures
+    r = round(v / factor) * factor
+    if abs(r) >= 10 or r == round(r):
+        return f"{r:,.0f}"
+    return f"{r:,.1f}"
 
 
 def build_sankey(
@@ -206,7 +221,9 @@ def build_sankey(
     beta: float = 0.85,
     eta_mfg: float = 0.98,
     eta_ore: float = 0.95,
+    eta_refine: float = 0.97,
     gamma: float = 0.70,
+    advanced: bool = True,
     min_flow: float = 10.0,
     # Eurostat anchor parameters
     anchor_mode: str = "mining",
@@ -245,8 +262,8 @@ def build_sankey(
     exp_used  = _exp(_USED_HS)
     imp_feed  = _imp(_FEED_HS)
     exp_feed  = _exp(_FEED_HS)
-    imp_bull  = _imp({780199})
-    exp_bull  = _exp({780199})
+    imp_crude = _imp(_CRUDE_HS)
+    exp_crude = _exp(_CRUDE_HS)
     imp_batt  = _imp({850710, 850720, 850790})
     exp_batt  = _exp({850710, 850720, 850790})
 
@@ -320,9 +337,8 @@ def build_sankey(
             mining_eff_secondary = max(0.0, refined_bgs - est_primary)
     else:  # USGS
         mined = mined_usgs
-        bullion_net = exp_bull - imp_bull
         eff_primary = ref_primary_usgs
-        mining_eff_secondary = max(0.0, ref_secondary_usgs + bullion_net)
+        mining_eff_secondary = max(0.0, ref_secondary_usgs)
 
     # ------------------------------------------------------------------
     # 4. Backward chain — Eurostat anchor or mining anchor
@@ -351,8 +367,11 @@ def build_sankey(
     # ------------------------------------------------------------------
     # 5. Forward chain (from total smelting)
     # ------------------------------------------------------------------
-    # 780199 (bullion) intentionally excluded from feedstock pool (cancels algebraically)
-    F1_feedstock = eff_total + imp_feed - exp_feed
+    # Crude (780199) attaches between smelting and refining: net crude trade is
+    # refined (with the secondary recovery) before joining the refined pool.
+    # Refined feed (780110/780191/282410/282490) joins the pool directly.
+    net_crude_refined = (imp_crude - exp_crude) * eta_refine
+    F1_feedstock = eff_total + (imp_feed - exp_feed) + net_crude_refined
     F2_nonbatt   = F1_feedstock * (1.0 - beta)
     F3_feed_batt = F1_feedstock * beta
     F4_batt_lead = max(0.0, F3_feed_batt) * eta_mfg
@@ -380,7 +399,7 @@ def build_sankey(
         "imp_scrap": imp_scrap, "exp_scrap": exp_scrap,
         "imp_used":  imp_used,  "exp_used":  exp_used,
         "imp_feed":  imp_feed,  "exp_feed":  exp_feed,
-        "imp_bull":  imp_bull,  "exp_bull":  exp_bull,
+        "imp_crude": imp_crude, "exp_crude": exp_crude,
         "imp_batt":  imp_batt,  "exp_batt":  exp_batt,
         "imp_metal": imp_metal, "exp_metal": exp_metal,
         "mined":     mined,
@@ -423,321 +442,153 @@ def build_sankey(
         links_hover.append(f"{label}: {_fmt(val)} t Pb")
 
     # ------------------------------------------------------------------
-    # Fixed-position nodes (mid-chain)
+    # Pools-only topology
     # ------------------------------------------------------------------
+    # Nodes are material *pools*. The process activities (collection, breaking,
+    # refining, manufacturing) are collapsed into the pool-to-pool links rather
+    # than shown as their own nodes. Trade appears as a single net flow per
+    # pool: a net import arrow into the pool, or a net export arrow out of it.
+    ore_dom   = max(0.0, mined + imp_ore - exp_ore)
+    # Trade rendering differs by mode (display only — the chain math above uses
+    # imp/exp separately either way):
+    #  * Advanced keeps every commodity's import and export as its own node.
+    #  * Easy groups all trade into one "Imports" node and one "Exports" node
+    #    (links coloured by product), and nets a commodity unless BOTH its
+    #    import and export are material — then it splits into gross.
+    imp_crude_ref = imp_crude * eta_refine   # crude 780199, refined into feedstock
+    exp_crude_ref = exp_crude * eta_refine
 
-    # Ore Available (x=0.18) — only if there is primary smelting or any ore flow
-    ore_flow_total = mined + max(0.0, imp_ore - exp_ore) + max(0.0, exp_ore - imp_ore)
-    show_ore_pool  = (eff_primary > 0) or (ore_flow_total > min_flow)
+    _ULAB_C = "#FB8C00"   # orange — ULAB pool
+    # Per-product link / node colours (match the app's category palette).
+    _PLINK = {
+        "ore":   "#9E9E9E",
+        "ulab":  "#FDD835",
+        "scrap": "#FB8C00",
+        "feed":  "#1E88E5",
+        "crude": "#5C6BC0",
+        "batt":  "#43A047",
+        "metal": "#607D8B",
+    }
 
-    if show_ore_pool:
-        ore_dom_val = max(0.0, mined + imp_ore - exp_ore)
-        ore_pool_idx = _add_node("Ore Available", _C["ore_pool"], 0.18, 0.15, ore_dom_val)
-    else:
-        ore_pool_idx = None
+    # ---- Pool nodes (added only when they carry material) ----------------
+    show_ore = mined > min_flow or imp_ore > min_flow or exp_ore > min_flow or eff_primary > min_flow
+    ore_idx = _add_node("Ore Pool", _C["ore_pool"], 0.22, 0.88, ore_dom) if show_ore else None
 
-    # Battery Collection (x=0.28)
-    show_collection = B4_collected > min_flow or imp_used > min_flow
-    if show_collection:
-        collection_idx = _add_node("ULAB Collection", _C["collection"], 0.28, 0.72, B4_collected)
-    else:
-        collection_idx = None
+    show_ulab = B5_total_ulab > min_flow or imp_used > min_flow or exp_used > min_flow
+    ulab_idx = _add_node("ULAB Pool", _ULAB_C, 0.20, 0.30, B5_total_ulab) if show_ulab else None
 
-    # Battery Breaking (x=0.38)
-    show_breaking = B2_break_out > min_flow
-    if show_breaking:
-        breaking_idx = _add_node("Battery Breaking", _C["breaking"], 0.38, 0.72, B2_break_out)
-    else:
-        breaking_idx = None
+    show_scrap = eff_secondary > min_flow or B2_break_out > min_flow or imp_scrap > min_flow or exp_scrap > min_flow
+    scrap_idx = _add_node("Scrap Pool", _C["scrap_pool"], 0.42, 0.32, B1_scrap_dom) if show_scrap else None
 
-    # Scrap Pool (x=0.46)
-    show_scrap_pool = eff_secondary > min_flow
-    if show_scrap_pool:
-        scrap_pool_idx = _add_node("Scrap Pool", _C["scrap_pool"], 0.46, 0.72, B1_scrap_dom)
-    else:
-        scrap_pool_idx = None
+    show_feed = (eff_total > 0 or F1_feedstock > min_flow or imp_feed > min_flow
+                 or exp_feed > min_flow or imp_crude_ref > min_flow or exp_crude_ref > min_flow)
+    feed_idx = _add_node("Feedstock Pool", _C["feedstock"], 0.60, 0.60, max(0.0, F1_feedstock)) if show_feed else None
 
-    # Refining node(s) (x=0.50)
-    use_split_refining = (
-        mining_source == "USGS" and eff_primary > min_flow and eff_secondary > min_flow
-    )
-    use_secondary_only = (
-        mining_source == "USGS" and eff_primary <= min_flow and eff_secondary > min_flow
-    )
-    use_primary_only   = (
-        mining_source == "USGS" and eff_secondary <= min_flow and eff_primary > min_flow
-    )
+    show_batt = F5_implied > min_flow or F4_batt_lead > min_flow or imp_batt > min_flow or exp_batt > min_flow
+    batt_idx = _add_node("Battery Pool", _C["batt_service"], 0.82, 0.45, F5_implied) if show_batt else None
 
-    primary_ref_idx   = None
-    secondary_ref_idx = None
-    bgs_ref_idx       = None
+    nonbatt_val  = F2_nonbatt + max(0.0, imp_metal)
+    show_nonbatt = nonbatt_val > min_flow or exp_metal > min_flow
+    nonbatt_idx = _add_node("Non-Battery Lead", _C["lead_products"], 0.82, 0.82, nonbatt_val) if show_nonbatt else None
 
-    if mining_source == "USGS":
-        if use_split_refining:
-            primary_ref_idx   = _add_node("Primary Refining",   _C["primary"],   0.50, 0.20, eff_primary)
-            secondary_ref_idx = _add_node("Secondary Refining", _C["secondary"], 0.50, 0.70, eff_secondary)
-        elif use_secondary_only or (eff_secondary > min_flow):
-            secondary_ref_idx = _add_node("Secondary Refining", _C["secondary"], 0.50, 0.70, eff_secondary)
-        elif use_primary_only or (eff_primary > min_flow):
-            primary_ref_idx   = _add_node("Primary Refining",   _C["primary"],   0.50, 0.20, eff_primary)
-    else:
-        # BGS: single "Refining" node
-        if eff_total > min_flow:
-            bgs_ref_idx = _add_node("Refining", _C["refining"], 0.50, 0.50, eff_total)
+    show_disposal = B6_disposed > min_flow
+    disposal_idx = _add_node("Uncollected / Disposed", _C["disposal"], 0.40, 0.08, B6_disposed) if show_disposal else None
 
-    # Feedstock Pool (x=0.62) — always shown if any refining
-    show_feedstock = (eff_total > 0) or (F1_feedstock > min_flow)
-    if show_feedstock:
-        feedstock_idx = _add_node("Feedstock Pool", _C["feedstock"], 0.62, 0.50, max(0.0, F1_feedstock))
-    else:
-        feedstock_idx = None
-
-    # Battery Manufacturing (x=0.75)
-    show_mfg = F4_batt_lead > min_flow
-    if show_mfg:
-        mfg_idx = _add_node("Battery Manufacturing", _C["battery_mfg"], 0.75, 0.65, F4_batt_lead)
-    else:
-        mfg_idx = None
-
-    # Non-Battery Lead (x=0.75)
-    show_nonbatt = F2_nonbatt > min_flow
-    if show_nonbatt:
-        nonbatt_idx = _add_node("Non-Battery Lead", _C["nonbatt"], 0.75, 0.30, F2_nonbatt)
-    else:
-        nonbatt_idx = None
-
-    # ------------------------------------------------------------------
-    # Source input nodes (x=0.01) — only if net positive
-    # ------------------------------------------------------------------
-    # We distribute y positions evenly among visible source nodes later.
+    # ---- Mine source (left column) ---------------------------------------
     source_nodes: list[int] = []
+    sink_nodes: list[int] = []
 
-    def _source(label: str, color: str, value: float) -> int:
+    mine_idx = None
+    if mined > min_flow:
+        mine_idx = _add_node("Mine Output", _C["mine"], 0.01, 0.90, mined)
+        source_nodes.append(mine_idx)
+
+    def _imp_node(label: str, color: str, value: float) -> int:
         idx = _add_node(label, color, 0.01, 0.5, value)
         source_nodes.append(idx)
         return idx
 
-    mine_idx         = None
-    ore_imp_idx      = None
-    ulab_imp_idx     = None
-    scrap_imp_idx    = None
-    feed_imp_idx     = None
-    batt_imp_idx     = None
-    metal_imp_idx    = None
-
-    if mined > min_flow:
-        mine_idx = _source("Mine Output", _C["mine"], mined)
-
-    if imp_ore - exp_ore > min_flow:
-        ore_imp_idx = _source("Ore Net Import", _C["ore_import"], imp_ore - exp_ore)
-
-    if imp_used - exp_used > min_flow:
-        ulab_imp_idx = _source("ULAB Net Import", _C["ulab_import"], imp_used - exp_used)
-
-    if imp_scrap - exp_scrap > min_flow:
-        scrap_imp_idx = _source("Scrap Net Import", _C["scrap_import"], imp_scrap - exp_scrap)
-
-    if imp_feed - exp_feed > min_flow:
-        feed_imp_idx = _source("Feed Net Import", _C["feed_import"], imp_feed - exp_feed)
-
-    if imp_batt - exp_batt > min_flow:
-        batt_imp_idx = _source("Battery Net Import", _C["batt_import"], imp_batt - exp_batt)
-
-    if dataset == "hs12" and (imp_metal - exp_metal) > min_flow:
-        metal_imp_idx = _source("Metal Products Import", _C["metal_import"], imp_metal - exp_metal)
-
-    # ------------------------------------------------------------------
-    # Sink output nodes (x=0.90)
-    # ------------------------------------------------------------------
-    sink_nodes: list[int] = []
-
-    def _sink(label: str, color: str, value: float) -> int:
-        idx = _add_node(label, color, 0.90, 0.5, value)
+    def _exp_node(label: str, color: str, value: float) -> int:
+        idx = _add_node(label, color, 0.98, 0.5, value)
         sink_nodes.append(idx)
         return idx
 
-    batt_service_idx      = None
-    lead_products_idx     = None
-    disposal_idx          = None
-    ore_exp_idx           = None
-    ulab_exp_idx          = None
-    scrap_exp_idx         = None
-    feed_exp_idx          = None
-    batt_exp_idx          = None
-    metal_exp_idx         = None
+    # ---- Links -----------------------------------------------------------
+    def _link(a, b, val, color, label):
+        if a is not None and b is not None:
+            _add_link(a, b, val, color, label)
 
-    if F5_implied > min_flow:
-        batt_service_idx = _sink("Battery Service", _C["batt_service"], F5_implied)
+    # Pool-to-pool transformations (activities collapsed into the arrows)
+    _link(mine_idx, ore_idx, mined, _C["mine"], "Mine Output → Ore Pool")
+    _link(ore_idx, feed_idx, eff_primary, _C["ore_pool"], "Ore Pool → Feedstock Pool (primary smelting)")
+    _link(ulab_idx, scrap_idx, B2_break_out, _ULAB_C, "ULAB Pool → Scrap Pool (breaking)")
+    _link(ulab_idx, disposal_idx, B6_disposed, _ULAB_C, "ULAB Pool → Uncollected / Disposed")
+    _link(scrap_idx, feed_idx, eff_secondary, _C["scrap_pool"], "Scrap Pool → Feedstock Pool (secondary smelting)")
+    _link(feed_idx, batt_idx, F4_batt_lead, _C["feedstock"], "Feedstock Pool → Battery Pool (manufacturing)")
+    _link(feed_idx, nonbatt_idx, F2_nonbatt, _C["feedstock"], "Feedstock Pool → Non-Battery Lead")
 
-    # Lead products terminal (non-battery lead + metal products net import)
-    lead_products_val = F2_nonbatt + max(0.0, imp_metal - exp_metal)
-    if lead_products_val > min_flow:
-        lead_products_idx = _sink("Lead Products", _C["lead_products"], lead_products_val)
+    # Use phase: batteries leaving domestic service feed the ULAB pool (start),
+    # and manufactured/imported batteries enter domestic service (end).
+    if B5_total_ulab > min_flow and ulab_idx is not None:
+        # Node black (link keeps the ULAB colour so it stays visible).
+        _leaving_idx = _add_node("Leaving domestic service", "#000000", 0.01, 0.30, B5_total_ulab)
+        source_nodes.append(_leaving_idx)
+        _link(_leaving_idx, ulab_idx, B5_total_ulab, _ULAB_C, "Leaving domestic service → ULAB Pool")
+    if F5_implied > min_flow and batt_idx is not None:
+        # Node white (link keeps the battery-service colour so it stays visible).
+        _service_idx = _add_node("Entering domestic service", "#FFFFFF", 0.98, 0.45, F5_implied)
+        sink_nodes.append(_service_idx)
+        _link(batt_idx, _service_idx, F5_implied, _C["batt_service"], "Battery Pool → Entering domestic service")
 
-    if B6_disposed > min_flow:
-        disposal_idx = _sink("Permanent Disposal", _C["disposal"], B6_disposed)
+    # Commodities: (pool, gross import, gross export, colour, display name)
+    _COMMODITIES = [
+        (ore_idx,     imp_ore,       exp_ore,       _PLINK["ore"],   "Ore"),
+        (ulab_idx,    imp_used,      exp_used,      _PLINK["ulab"],  "ULAB"),
+        (scrap_idx,   imp_scrap,     exp_scrap,     _PLINK["scrap"], "Scrap"),
+        (feed_idx,    imp_feed,      exp_feed,      _PLINK["feed"],  "Refined feed"),
+        (feed_idx,    imp_crude_ref, exp_crude_ref, _PLINK["crude"], "Crude"),
+        (batt_idx,    imp_batt,      exp_batt,      _PLINK["batt"],  "Battery"),
+    ]
+    if dataset == "hs12":
+        _COMMODITIES.append((nonbatt_idx, imp_metal, exp_metal, _PLINK["metal"], "Metal"))
 
-    if exp_ore - imp_ore > min_flow:
-        ore_exp_idx = _sink("Ore Exports", _C["export_sink"], exp_ore - imp_ore)
-
-    if exp_used - imp_used > min_flow:
-        ulab_exp_idx = _sink("ULAB Exports", _C["export_sink"], exp_used - imp_used)
-
-    if exp_scrap - imp_scrap > min_flow:
-        scrap_exp_idx = _sink("Scrap Exports", _C["export_sink"], exp_scrap - imp_scrap)
-
-    if exp_feed - imp_feed > min_flow:
-        feed_exp_idx = _sink("Feed Exports", _C["export_sink"], exp_feed - imp_feed)
-
-    if exp_batt - imp_batt > min_flow:
-        batt_exp_idx = _sink("Battery Exports", _C["export_sink"], exp_batt - imp_batt)
-
-    if dataset == "hs12" and (exp_metal - imp_metal) > min_flow:
-        metal_exp_idx = _sink("Metal Products Exports", _C["export_sink"], exp_metal - imp_metal)
-
-    # ------------------------------------------------------------------
-    # Links — backward chain
-    # ------------------------------------------------------------------
-
-    # Mine Output → Ore Available
-    if mine_idx is not None and ore_pool_idx is not None:
-        _add_link(mine_idx, ore_pool_idx, mined, _C["mine"],
-                  "Mine Output → Ore Available")
-
-    # Ore Net Import → Ore Available
-    if ore_imp_idx is not None and ore_pool_idx is not None:
-        _add_link(ore_imp_idx, ore_pool_idx, imp_ore - exp_ore, _C["ore_import"],
-                  "Ore Net Import → Ore Available")
-
-    # Ore Available → Ore Exports (net exporter of ore)
-    if ore_pool_idx is not None and ore_exp_idx is not None:
-        _add_link(ore_pool_idx, ore_exp_idx, exp_ore - imp_ore, _C["ore_pool"],
-                  "Ore Available → Ore Exports")
-
-    # Ore Available → Primary Refining
-    if ore_pool_idx is not None and eff_primary > min_flow:
-        ref_tgt = primary_ref_idx if primary_ref_idx is not None else bgs_ref_idx
-        if ref_tgt is not None:
-            _add_link(ore_pool_idx, ref_tgt, eff_primary, _C["ore_pool"],
-                      "Ore Available → Primary Refining")
-
-    # ULAB Net Import → Battery Collection
-    if ulab_imp_idx is not None and collection_idx is not None:
-        _add_link(ulab_imp_idx, collection_idx, imp_used - exp_used, _C["ulab_import"],
-                  "ULAB Net Import → ULAB Collection")
-
-    # Battery Collection → ULAB Exports
-    if collection_idx is not None and ulab_exp_idx is not None:
-        _add_link(collection_idx, ulab_exp_idx, exp_used - imp_used, _C["collection"],
-                  "ULAB Collection → ULAB Exports")
-
-    # Battery Collection → Battery Breaking
-    if collection_idx is not None and breaking_idx is not None:
-        _add_link(collection_idx, breaking_idx, B4_collected, _C["collection"],
-                  "ULAB Collection → Battery Breaking")
-
-    # Battery Collection → Permanent Disposal
-    # B6 = B4 * (1/gamma - 1)
-    if collection_idx is not None and disposal_idx is not None:
-        _add_link(collection_idx, disposal_idx, B6_disposed, _C["collection"],
-                  "ULAB Collection → Permanent Disposal")
-
-    # Battery Breaking → Scrap Pool
-    if breaking_idx is not None and scrap_pool_idx is not None:
-        _add_link(breaking_idx, scrap_pool_idx, B2_break_out, _C["breaking"],
-                  "Battery Breaking → Scrap Pool")
-
-    # Scrap Net Import → Scrap Pool
-    if scrap_imp_idx is not None and scrap_pool_idx is not None:
-        _add_link(scrap_imp_idx, scrap_pool_idx, imp_scrap - exp_scrap, _C["scrap_import"],
-                  "Scrap Net Import → Scrap Pool")
-
-    # Scrap Pool → Scrap Exports
-    if scrap_pool_idx is not None and scrap_exp_idx is not None:
-        _add_link(scrap_pool_idx, scrap_exp_idx, exp_scrap - imp_scrap, _C["scrap_pool"],
-                  "Scrap Pool → Scrap Exports")
-
-    # Scrap Pool → Secondary Refining (or BGS Refining)
-    if scrap_pool_idx is not None and eff_secondary > min_flow:
-        sec_tgt = secondary_ref_idx if secondary_ref_idx is not None else bgs_ref_idx
-        if sec_tgt is not None:
-            _add_link(scrap_pool_idx, sec_tgt, eff_secondary, _C["scrap_pool"],
-                      "Scrap Pool → Secondary Refining")
-
-    # ------------------------------------------------------------------
-    # Links — forward chain
-    # ------------------------------------------------------------------
-
-    # Primary Refining → Feedstock Pool
-    if primary_ref_idx is not None and feedstock_idx is not None:
-        _add_link(primary_ref_idx, feedstock_idx, eff_primary, _C["primary"],
-                  "Primary Refining → Feedstock Pool")
-
-    # Secondary Refining → Feedstock Pool
-    if secondary_ref_idx is not None and feedstock_idx is not None:
-        _add_link(secondary_ref_idx, feedstock_idx, eff_secondary, _C["secondary"],
-                  "Secondary Refining → Feedstock Pool")
-
-    # BGS Refining → Feedstock Pool
-    if bgs_ref_idx is not None and feedstock_idx is not None:
-        _add_link(bgs_ref_idx, feedstock_idx, eff_total, _C["refining"],
-                  "Refining → Feedstock Pool")
-
-    # Feed Net Import → Feedstock Pool
-    if feed_imp_idx is not None and feedstock_idx is not None:
-        _add_link(feed_imp_idx, feedstock_idx, imp_feed - exp_feed, _C["feed_import"],
-                  "Feed Net Import → Feedstock Pool")
-
-    # Feedstock Pool → Feed Exports
-    if feedstock_idx is not None and feed_exp_idx is not None:
-        _add_link(feedstock_idx, feed_exp_idx, exp_feed - imp_feed, _C["feedstock"],
-                  "Feedstock Pool → Feed Exports")
-
-    # Feedstock Pool → Non-Battery Lead
-    if feedstock_idx is not None and nonbatt_idx is not None:
-        _add_link(feedstock_idx, nonbatt_idx, F2_nonbatt, _C["feedstock"],
-                  "Feedstock Pool → Non-Battery Lead")
-
-    # Feedstock Pool → Battery Manufacturing
-    if feedstock_idx is not None and mfg_idx is not None:
-        _add_link(feedstock_idx, mfg_idx, F3_feed_batt, _C["feedstock"],
-                  "Feedstock Pool → Battery Manufacturing")
-
-    # Battery Manufacturing → Battery Service
-    if mfg_idx is not None and batt_service_idx is not None:
-        _add_link(mfg_idx, batt_service_idx, F4_batt_lead, _C["battery_mfg"],
-                  "Battery Manufacturing → Battery Service")
-
-    # Battery Net Import → Battery Service
-    if batt_imp_idx is not None and batt_service_idx is not None:
-        _add_link(batt_imp_idx, batt_service_idx, imp_batt - exp_batt, _C["batt_import"],
-                  "Battery Net Import → Battery Service")
-
-    # Battery Service → Battery Exports
-    if batt_service_idx is not None and batt_exp_idx is not None:
-        _add_link(batt_service_idx, batt_exp_idx, exp_batt - imp_batt, _C["batt_service"],
-                  "Battery Service → Battery Exports")
-
-    # Non-Battery Lead → Lead Products
-    if nonbatt_idx is not None and lead_products_idx is not None:
-        _add_link(nonbatt_idx, lead_products_idx, F2_nonbatt, _C["nonbatt"],
-                  "Non-Battery Lead → Lead Products")
-
-    # Metal Products Import → Lead Products
-    if metal_imp_idx is not None and lead_products_idx is not None:
-        _add_link(metal_imp_idx, lead_products_idx, imp_metal - exp_metal, _C["metal_import"],
-                  "Metal Products Import → Lead Products")
-
-    # Lead Products → Metal Products Exports
-    if lead_products_idx is not None and metal_exp_idx is not None:
-        _add_link(lead_products_idx, metal_exp_idx, exp_metal - imp_metal, _C["lead_products"],
-                  "Lead Products → Metal Products Exports")
+    # Separate import/export node per commodity in both modes. Advanced always
+    # shows gross imports and exports; Easy nets a commodity unless BOTH its
+    # import and export are material (then it splits into gross).
+    for pool_idx, imp, exp, color, name in _COMMODITIES:
+        if pool_idx is None:
+            continue
+        both_material = imp > min_flow and exp > min_flow
+        if advanced or both_material:
+            if imp > min_flow:
+                _link(_imp_node(f"{name} Imports", color, imp), pool_idx, imp, color, f"{name} Imports → pool")
+            if exp > min_flow:
+                _link(pool_idx, _exp_node(f"{name} Exports", color, exp), exp, color, f"pool → {name} Exports")
+        else:
+            net = imp - exp
+            if net > min_flow:
+                _link(_imp_node(f"{name} Net Import", color, net), pool_idx, net, color, f"{name} Net Import → pool")
+            elif -net > min_flow:
+                _link(pool_idx, _exp_node(f"{name} Net Export", color, -net), -net, color, f"pool → {name} Net Export")
 
     # ------------------------------------------------------------------
     # Fallback: if no links were produced, return None
     # ------------------------------------------------------------------
     if not links_src:
         return None, model_outputs, "No flows above the minimum threshold to display."
+
+    # ------------------------------------------------------------------
+    # Node hover = actual throughput (max of total in / total out link value),
+    # so the number shown matches the bar Plotly draws for that node.
+    # ------------------------------------------------------------------
+    _in_sum  = [0.0] * len(node_labels)
+    _out_sum = [0.0] * len(node_labels)
+    for _s, _t, _v in zip(links_src, links_tgt, links_val):
+        _out_sum[_s] += _v
+        _in_sum[_t]  += _v
+    for _i in range(len(node_labels)):
+        _sz = max(_in_sum[_i], _out_sum[_i])
+        node_hover[_i] = f"{node_labels[_i]}: {_fmt(_sz)} t Pb"
 
     # ------------------------------------------------------------------
     # Y-position distribution for source (x=0.01) and sink (x=0.90) nodes
@@ -790,7 +641,7 @@ def build_sankey(
         margin        = dict(l=10, r=10, t=60, b=10),
         title         = dict(
             text=(
-                f"<b>{country} — Lead Mass Balance</b>  "
+                f"<b>{country} — Lead Material Flow</b>  "
                 f"({period_label}) &nbsp;&nbsp;"
                 f"<span style='font-size:12px;font-weight:normal;color:#777'>"
                 f"values in t Pb &nbsp;·&nbsp; "
@@ -878,7 +729,7 @@ def _build_radar_chart(
     cats = ["ULAB Collection", "Breaking", "Sec. Smelting", "Manufacturing"]
     vals = [collecting, breaking, smelting, mfg]
     r    = [v / peak for v in vals]
-    hover = [f"<b>{c}</b><br>{v:,.0f} t Pb" for c, v in zip(cats, vals)]
+    hover = [f"<b>{c}</b><br>{_fmt(v)} t Pb" for c, v in zip(cats, vals)]
 
     fig = go.Figure()
     fig.add_trace(go.Scatterpolar(
@@ -944,6 +795,7 @@ def render_mass_balance_sankey_tab(
     pb_factors: dict[int, float],
     mining_source: str,
     eurostat_df: dict | None = None,
+    advanced: bool = True,
 ) -> None:
     """
     Render the Mass Balance Sankey tab inside a Streamlit app.
@@ -962,6 +814,9 @@ def render_mass_balance_sankey_tab(
     dataset         : "hs12" or "hs22".
     pb_factors      : dict mapping HS code (int) → Pb content fraction.
     mining_source   : "BGS" or "USGS".
+    advanced        : when False (Easy mode), hide the min-flow control (fixed at
+                      50 kt), the process-parameter sliders, the inline
+                      experimental disclaimer, and the model-output-details table.
     """
     # ------------------------------------------------------------------
     # Filter to countries with at least some refining data (BGS or USGS)
@@ -993,18 +848,22 @@ def render_mass_balance_sankey_tab(
         return
 
     # ------------------------------------------------------------------
-    # Disclaimer
+    # Disclaimer (Advanced only; Easy has this in the tab's Learn More)
     # ------------------------------------------------------------------
-    st.info(
-        "**Experimental model.** Values are estimates derived from trade and production "
-        "data and will change as parameters are adjusted. Results should be treated as "
-        "indicative, not precise."
-    )
+    if advanced:
+        st.info(
+            "**Experimental model.** Values are estimates derived from trade and production "
+            "data and will change as parameters are adjusted. Results should be treated as "
+            "indicative, not precise."
+        )
 
     # ------------------------------------------------------------------
     # Layout: narrow left column (controls) + wide right column (chart)
     # ------------------------------------------------------------------
     left_col, right_col = st.columns([1, 3])
+
+    # Easy-mode fixed defaults (no widgets rendered).
+    EASY_MIN_FLOW = 10.0   # t Pb (matches the original default)
 
     with left_col:
         st.markdown("#### Country")
@@ -1028,73 +887,96 @@ def render_mass_balance_sankey_tab(
         _is_eu_eligible = country in EUROSTAT_ELIGIBLE
         anchor_choice = "USGS / BGS smelting output"
 
-        st.markdown("#### Display")
-        min_flow = st.number_input(
-            "Min flow threshold (t Pb)",
-            min_value=0,
-            value=10,
-            step=10,
-            help=(
-                "Links smaller than this value (in tonnes of lead content) "
-                "are hidden to reduce visual clutter."
-            ),
-            key="sankey_min_flow",
-        )
-
-        st.markdown("#### Process parameters")
-        with st.expander("Process parameters", expanded=False):
-            eta_secondary = st.slider(
-                "Net secondary smelting recovery (η_secondary)",
-                min_value=0.80, max_value=1.00, value=0.97, step=0.01, format="%.2f",
-                key="sankey_eta_secondary",
-            )
-            eta_break = st.slider(
-                "Breaking recovery (η_break)",
-                min_value=0.70, max_value=1.00, value=0.95, step=0.01, format="%.2f",
-                key="sankey_eta_break",
-            )
-            delta_pb = st.slider(
-                "Pb retained at end-of-life (δ)",
-                min_value=0.80, max_value=1.00, value=0.95, step=0.01, format="%.2f",
-                key="sankey_delta_pb",
-            )
-            beta = st.slider(
-                "Battery share of lead demand (β)",
-                min_value=0.50, max_value=1.00, value=0.85, step=0.01, format="%.2f",
-                key="sankey_beta",
-            )
-            eta_mfg = st.slider(
-                "Manufacturing efficiency (η_mfg)",
-                min_value=0.90, max_value=1.00, value=0.98, step=0.01, format="%.2f",
-                key="sankey_eta_mfg",
-            )
-            eta_ore = st.slider(
-                "Primary smelting recovery (η_ore)",
-                min_value=0.80, max_value=1.00, value=0.95, step=0.01, format="%.2f",
-                key="sankey_eta_ore",
-            )
-            gamma = st.slider(
-                "Collection rate (γ) — overrides country default",
-                min_value=0.30, max_value=1.00, value=0.90, step=0.01, format="%.2f",
-                key="sankey_gamma",
+        if advanced:
+            st.markdown("#### Display")
+            min_flow = st.number_input(
+                "Min flow threshold (t Pb)",
+                min_value=0,
+                value=10,
+                step=10,
                 help=(
-                    "Default is 0.90 (10% disposal). Adjust this for the specific "
-                    "country you are modelling — e.g. ~0.99 for USA/Japan, ~0.70 "
-                    "for India, ~0.60 for Nigeria."
+                    "Links smaller than this value (in tonnes of lead content) "
+                    "are hidden to reduce visual clutter."
                 ),
+                key="sankey_min_flow",
             )
-            battery_lead_content_fraction = 0.65
-            if _is_eu_eligible and anchor_choice == "Eurostat collection data":
-                battery_lead_content_fraction = st.slider(
-                    "Battery lead content fraction (Eurostat conversion)",
-                    min_value=0.55, max_value=0.75, value=0.65, step=0.01, format="%.2f",
-                    key="sankey_batt_lc_fraction",
+
+            st.markdown("#### Process parameters")
+            with st.expander("Process parameters", expanded=False):
+                eta_secondary = st.slider(
+                    "Net secondary smelting recovery (η_secondary)",
+                    min_value=0.80, max_value=1.00, value=0.97, step=0.01, format="%.2f",
+                    key="sankey_eta_secondary",
+                )
+                eta_break = st.slider(
+                    "Breaking recovery (η_break)",
+                    min_value=0.70, max_value=1.00, value=0.95, step=0.01, format="%.2f",
+                    key="sankey_eta_break",
+                )
+                delta_pb = st.slider(
+                    "Pb retained at end-of-life (δ)",
+                    min_value=0.80, max_value=1.00, value=0.95, step=0.01, format="%.2f",
+                    key="sankey_delta_pb",
+                )
+                beta = st.slider(
+                    "Battery share of lead demand (β)",
+                    min_value=0.50, max_value=1.00, value=0.85, step=0.01, format="%.2f",
+                    key="sankey_beta",
+                )
+                eta_mfg = st.slider(
+                    "Manufacturing efficiency (η_mfg)",
+                    min_value=0.90, max_value=1.00, value=0.98, step=0.01, format="%.2f",
+                    key="sankey_eta_mfg",
+                )
+                eta_ore = st.slider(
+                    "Primary smelting recovery (η_ore)",
+                    min_value=0.80, max_value=1.00, value=0.95, step=0.01, format="%.2f",
+                    key="sankey_eta_ore",
+                )
+                eta_refine = st.slider(
+                    "Refining recovery on crude 780199 (η_refine)",
+                    min_value=0.80, max_value=1.00, value=0.97, step=0.01, format="%.2f",
+                    key="sankey_eta_refine",
                     help=(
-                        "Converts Eurostat total battery weight (t LAB/yr) to lead "
-                        "content. SLI-dominated streams: ~0.65. Industrial-heavy: "
-                        "~0.70. Applied before the δ (end-of-life retention) factor."
+                        "Applied to net imported/exported crude lead (HS 780199) as it is "
+                        "refined into the feedstock pool. Refined feed (780110/780191/"
+                        "282410/282490) enters the pool without this loss."
                     ),
                 )
+                gamma = st.slider(
+                    "Collection rate (γ) — overrides country default",
+                    min_value=0.30, max_value=1.00, value=0.90, step=0.01, format="%.2f",
+                    key="sankey_gamma",
+                    help=(
+                        "Default is 0.90 (10% disposal). Adjust this for the specific "
+                        "country you are modelling — e.g. ~0.99 for USA/Japan, ~0.70 "
+                        "for India, ~0.60 for Nigeria."
+                    ),
+                )
+                battery_lead_content_fraction = 0.65
+                if _is_eu_eligible and anchor_choice == "Eurostat collection data":
+                    battery_lead_content_fraction = st.slider(
+                        "Battery lead content fraction (Eurostat conversion)",
+                        min_value=0.55, max_value=0.75, value=0.65, step=0.01, format="%.2f",
+                        key="sankey_batt_lc_fraction",
+                        help=(
+                            "Converts Eurostat total battery weight (t LAB/yr) to lead "
+                            "content. SLI-dominated streams: ~0.65. Industrial-heavy: "
+                            "~0.70. Applied before the δ (end-of-life retention) factor."
+                        ),
+                    )
+        else:
+            # Easy mode: fixed threshold + default process parameters.
+            min_flow = EASY_MIN_FLOW
+            eta_secondary = 0.97
+            eta_break = 0.95
+            delta_pb = 0.95
+            beta = 0.85
+            eta_mfg = 0.98
+            eta_ore = 0.95
+            eta_refine = 0.97
+            gamma = 0.90
+            battery_lead_content_fraction = 0.65
 
     # ------------------------------------------------------------------
     # Eurostat anchor: resolve availability and effective mode
@@ -1143,7 +1025,9 @@ def render_mass_balance_sankey_tab(
         beta                       = beta,
         eta_mfg                    = eta_mfg,
         eta_ore                    = eta_ore,
+        eta_refine                 = eta_refine,
         gamma                      = gamma,
+        advanced                   = advanced,
         min_flow                   = float(min_flow),
         anchor_mode                = _anchor_mode,
         eurostat_input_t           = _eurostat_input_t,
@@ -1196,25 +1080,32 @@ def render_mass_balance_sankey_tab(
             )
 
     # ------------------------------------------------------------------
-    # Summary table (full width, below the chart)
+    # Summary table (Advanced only, full width, below the chart)
     # ------------------------------------------------------------------
-    st.divider()
-    with st.expander("Model output details", expanded=False):
-        summary_df = _build_summary_table(model_outputs)
-        st.dataframe(
-            summary_df,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "Variable":    st.column_config.TextColumn("Variable", width="large"),
-                "Value (t Pb)": st.column_config.TextColumn("Value (t Pb)", width="medium"),
-            },
-        )
+    if advanced:
+        st.divider()
+        with st.expander("Model output details", expanded=False):
+            summary_df = _build_summary_table(model_outputs)
+            st.dataframe(
+                summary_df,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Variable":    st.column_config.TextColumn("Variable", width="large"),
+                    "Value (t Pb)": st.column_config.TextColumn("Value (t Pb)", width="medium"),
+                },
+            )
+            st.caption(
+                "All values are metric tonnes of lead content, averaged over the selected "
+                f"period ({', '.join(str(y) for y in active_years)}). "
+                "Backward chain (B1–B6) is anchored to the refining estimate. "
+                "Forward chain (F1–F5) derives implied installation from refining output."
+            )
+    else:
         st.caption(
-            "All values are metric tonnes of lead content, averaged over the selected "
-            f"period ({', '.join(str(y) for y in active_years)}). "
-            "Backward chain (B1–B6) is anchored to the refining estimate. "
-            "Forward chain (F1–F5) derives implied installation from refining output."
+            "Note: very small flows (below 10 t Pb) are hidden to reduce clutter. Imports and "
+            "exports are shown as net values at each pool. All figures are rounded to 2 "
+            "significant figures."
         )
 
 
@@ -1255,7 +1146,7 @@ def _build_snapshot_radar(
     mfg_dom   = max(0.0, outputs.get("F4_batt_lead",  0.0))
     mine_dom  = max(0.0, outputs.get("mined",          0.0))
 
-    cats     = ["ULAB Collection", "Breaking", "Sec. Smelting", "Manufacturing"]
+    cats     = ["Collection", "Breaking", "Sec. Smelting", "Manufacturing"]
     dom_vals = [ulab_dom, break_dom, smelt, mfg_dom]
 
     if show_mining:
@@ -1267,7 +1158,7 @@ def _build_snapshot_radar(
         return None
 
     r_dom     = [v / peak for v in dom_vals]
-    hover_dom = [f"<b>{c}</b><br>{v:,.0f} t Pb" for c, v in zip(cats, dom_vals)]
+    hover_dom = [f"<b>{c}</b><br>{_fmt(v)} t Pb" for c, v in zip(cats, dom_vals)]
 
     tick_text = (
         [_fmt_tick(f * peak) for f in [0.25, 0.5, 0.75, 1.0]]
@@ -1292,10 +1183,10 @@ def _build_snapshot_radar(
         # Dashed square at ULAB Collection level across all 4 recycling axes.
         # Shows what each downstream stage would look like if it fully used
         # everything that was collected — the "perfect loop" reference.
-        _bl_cats = ["ULAB Collection", "Breaking", "Sec. Smelting", "Manufacturing"]
+        _bl_cats = ["Collection", "Breaking", "Sec. Smelting", "Manufacturing"]
         _bl_r    = [ulab_dom / peak] * 4
         _bl_hover = [
-            f"<b>{c}</b><br>Collection baseline: {ulab_dom:,.0f} t Pb"
+            f"<b>{c}</b><br>Collection baseline: {_fmt(ulab_dom)} t Pb"
             for c in _bl_cats
         ]
         fig.add_trace(go.Scatterpolar(
@@ -1310,8 +1201,8 @@ def _build_snapshot_radar(
         ))
 
     fig.update_layout(
-        height        = 340,
-        margin        = dict(l=50, r=50, t=60, b=40),
+        height        = 380,
+        margin        = dict(l=50, r=50, t=60, b=90),
         font          = dict(family="Arial", size=11, color="#222222"),
         paper_bgcolor = "white",
         title         = dict(
@@ -1326,8 +1217,8 @@ def _build_snapshot_radar(
         ),
         legend        = dict(
             orientation = "h",
-            yanchor     = "bottom",
-            y           = -0.18,
+            yanchor     = "top",
+            y           = -0.22,
             xanchor     = "center",
             x           = 0.5,
             font        = dict(size=10),
@@ -1365,20 +1256,34 @@ def render_economy_snapshot_tab(
     dataset: str,
     pb_factors: dict[int, float],
     mining_source: str,
+    advanced: bool = True,
 ) -> None:
     """
-    Recycling Economy Snapshot tab — side-by-side radar comparison of up to 3 countries.
+    Recycling Economy Snapshot tab — side-by-side radar comparison of countries
+    (up to 3 in Advanced mode, 2 in Easy mode).
     """
     st.markdown("### Recycling Economy Snapshot")
-    st.write(
-        "Each country occupies a different position in the lead-acid battery lifecycle. "
-        "The radar shows activity at four stages of the recycling loop: "
-        "**ULAB Collection** → **Breaking** → **Secondary Smelting** → **Manufacturing**. "
-        "Each chart is normalised to the country's own peak stage. "
-        "A country with a full, closed recycling economy fills all four axes equally. "
-        "Countries that only collect and export scrap show high Collection with low Smelting "
-        "and near-zero Manufacturing; import-dependent assemblers show the reverse."
+    st.markdown(
+        "These graphs are based on BOTEC-type estimates for each activity and describe how "
+        "the country engages in each activity. A perfectly circular economy would be an "
+        "equilateral diamond, but no country is perfectly circular. In the example below we "
+        "can see:\n\n"
+        "- **Germany** overproduces — it manufactures more batteries than it would need "
+        "domestically.\n"
+        "- **The US** does not break, smelt, or manufacture enough batteries domestically to "
+        "keep up with its demand."
     )
+    with st.popover("ℹ Learn more"):
+        st.markdown(
+            "**Data sources:** BACI trade flows + BGS/USGS production + "
+            "material-flow model outputs.\n\n"
+            "**How it's used:** Key metrics (collection rate, secondary smelting "
+            "share, battery self-sufficiency, etc.) are derived from the same "
+            "material-flow equations as the Material Flow tab, but presented "
+            "as a compact summary rather than a full Sankey. "
+            "Use this tab to quickly compare countries or identify which stage "
+            "in the recycling loop is under-performing."
+        )
     # Eligible countries (same filter as Process Estimates)
     _refining_cols = ["refined_bgs_t", "refined_primary_usgs_t", "refined_secondary_usgs_t"]
     _has_refining = mining_df[
@@ -1405,56 +1310,71 @@ def render_economy_snapshot_tab(
     )
     NONE_OPT = "— none —"
     opts = [NONE_OPT] + all_countries
+    defaults = ["Germany", "USA", NONE_OPT]
 
-    # ── Country selectors ──────────────────────────────────────────────
-    sel_col1, sel_col2, sel_col3 = st.columns(3)
-    defaults = ["Germany", "France", "Poland"]
-    with sel_col1:
-        c1 = st.selectbox(
-            "Country 1", opts,
-            index=opts.index(defaults[0]) if defaults[0] in opts else 0,
-            key="snap_c1",
-        )
-    with sel_col2:
-        c2 = st.selectbox(
-            "Country 2", opts,
-            index=opts.index(defaults[1]) if defaults[1] in opts else 0,
-            key="snap_c2",
-        )
-    with sel_col3:
-        c3 = st.selectbox(
-            "Country 3", opts,
-            index=opts.index(defaults[2]) if defaults[2] in opts else 0,
-            key="snap_c3",
+    def _snap_selectbox(label: str, key: str, default: str):
+        return st.selectbox(
+            label, opts,
+            index=opts.index(default) if default in opts else 0,
+            key=key,
         )
 
-    selected = [c for c in [c1, c2, c3] if c and c != NONE_OPT]
+    # ── Country selectors (3 in Advanced, 2 in Easy) ───────────────────
+    if advanced:
+        sel_col1, sel_col2, sel_col3 = st.columns(3)
+        with sel_col1:
+            c1 = _snap_selectbox("Country 1", "snap_c1", defaults[0])
+        with sel_col2:
+            c2 = _snap_selectbox("Country 2", "snap_c2", defaults[1])
+        with sel_col3:
+            c3 = _snap_selectbox("Country 3", "snap_c3", defaults[2])
+        selected = [c for c in [c1, c2, c3] if c and c != NONE_OPT]
+    else:
+        sel_col1, sel_col2 = st.columns(2)
+        with sel_col1:
+            c1 = _snap_selectbox("Country 1", "snap_c1", defaults[0])
+        with sel_col2:
+            c2 = _snap_selectbox("Country 2", "snap_c2", defaults[1])
+        selected = [c for c in [c1, c2] if c and c != NONE_OPT]
+
     if not selected:
         st.info("Select at least one country above to display the radar.")
         return
 
-    # ── Toggles ────────────────────────────────────────────────────────
-    tog1, tog2, tog3, _ = st.columns([1, 1, 1, 2])
-    with tog1:
-        show_mining = st.toggle("Add Mining axis", value=False, key="snap_mining")
-    with tog2:
-        show_collection_baseline = st.toggle(
-            "Show Collection Baseline",
-            value=False,
-            key="snap_collection_baseline",
+    # ── Toggles (Advanced only) ────────────────────────────────────────
+    # Easy mode fixes: no Mining axis, Collection Baseline shown, common scale.
+    if advanced:
+        tog1, tog2, tog3, _ = st.columns([1, 1, 1, 2])
+        with tog1:
+            show_mining = st.toggle("Add Mining axis", value=False, key="snap_mining")
+        with tog2:
+            show_collection_baseline = st.toggle(
+                "Show Collection Baseline",
+                value=False,
+                key="snap_collection_baseline",
+                help=(
+                    "Adds a dashed line at the ULAB Collection level across all recycling "
+                    "stages. When a stage reaches this line, it is fully using everything "
+                    "that was collected. Stages below indicate losses or exports at that step."
+                ),
+            )
+        with tog3:
+            global_norm = st.toggle("Same scale for all", value=False, key="snap_norm",
+                                     help=(
+                                         "Normalize all charts to the same peak so "
+                                         "absolute sizes are comparable. Default: each chart "
+                                         "is scaled to its own peak."
+                                     ))
+    else:
+        show_mining = False
+        show_collection_baseline = True
+        global_norm = st.toggle(
+            "Same scale for both", value=False, key="snap_norm_easy",
             help=(
-                "Adds a dashed line at the ULAB Collection level across all recycling "
-                "stages. When a stage reaches this line, it is fully using everything "
-                "that was collected. Stages below indicate losses or exports at that step."
+                "Normalize both charts to the same peak so absolute sizes are "
+                "comparable. Default: each country is scaled to its own peak."
             ),
         )
-    with tog3:
-        global_norm = st.toggle("Same scale for all", value=False, key="snap_norm",
-                                 help=(
-                                     "Normalize all three charts to the same peak so "
-                                     "absolute sizes are comparable. Default: each chart "
-                                     "is scaled to its own peak."
-                                 ))
 
     # ── Compute model outputs for each country ─────────────────────────
     master_df = _load_master_baci() if dataset == "hs12" else pd.DataFrame(
