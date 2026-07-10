@@ -1263,6 +1263,12 @@ def render_economy_snapshot_tab(
     (up to 3 in Advanced mode, 2 in Easy mode).
     """
     st.markdown("### Recycling Economy Snapshot")
+    st.warning(
+        "This is based on BOTEC-type calculations and has not been reconciled against "
+        "external data sources. It also does not account for informal vs. formal "
+        "dynamics, which can greatly affect the values at each step.",
+        icon="⚠️",
+    )
     st.markdown(
         "These graphs are based on BOTEC-type estimates for each activity and describe how "
         "the country engages in each activity. A perfectly circular economy would be an "
