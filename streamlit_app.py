@@ -858,6 +858,11 @@ if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
                     "cross-region (external) flows are shown."
                 )
 
+        # ── Primary map slot: filled after all the controls below are read, so
+        # the map sits directly under the intro while still reflecting their
+        # state (place, color mode, product ticks). ──────────────────────────
+        _map_slot = st.container()
+
         # ── Place selector: countries + regions in one dropdown ───────────────
         # Regions (continents, then UN sub-regions) are listed first, then all
         # countries alphabetically. Selection is dispatched three ways below:
@@ -896,10 +901,6 @@ if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
             )
         else:
             map_color_mode = "Global volume scale"
-
-        # Map is rendered into this slot AFTER the tick boxes are read, so it
-        # appears above them in the layout while still reflecting their state.
-        _map_slot = st.container()
 
         # ── Product category / HS-code tick boxes (below the map) ─────────────
         _code_to_name = {code: _strip_cat_emoji(lbl) for lbl, code in _CAT_LABELS.items()}
@@ -953,7 +954,7 @@ if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
             if _is_all:
                 st.caption(
                     f"Showing annualised trade volume (imports + exports) per country{_period_note}. "
-                    "Select a country or region above to see its trade partners."
+                    "Select a country or region below to see its trade partners."
                 )
                 _fig = build_total_volume_map(_disp_f, year, _cats_present, _cat_display_label)
             elif _is_region:
@@ -1125,6 +1126,11 @@ if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
                     "Advanced mode adds up to three places, a year-on-year % change view, and a "
                     "shared y-axis toggle."
                 )
+
+        # ── Primary chart slot: filled after the controls below are read, so the
+        # trend charts sit directly under the intro. ─────────────────────────
+        _tt_chart_slot = st.container()
+
         _bgs_data       = _load_bgs()
         _tt_usgs_mined  = _load_usgs_mined()
         _tt_usgs_ref    = _load_usgs_refined()
@@ -1193,37 +1199,38 @@ if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
             if _tt_valid(sel)
         ]
 
-        if not tt_series:
-            st.info("Select at least one series above.")
-        elif not _tt_slots:
-            st.info("Select a country or region above to plot its trends.")
-        else:
-            _tt_slot_results = [
-                _tt_compute_slot(
-                    baci_df, _bgs_data, _tt_usgs_mined, _tt_usgs_ref,
-                    sel, tt_series, _tt_year_idx, _mining_pref,
-                )
-                for sel, _ in _tt_slots
-            ]
+        with _tt_chart_slot:
+            if not tt_series:
+                st.info("Select at least one series below.")
+            elif not _tt_slots:
+                st.info("Select a country or region below to plot its trends.")
+            else:
+                _tt_slot_results = [
+                    _tt_compute_slot(
+                        baci_df, _bgs_data, _tt_usgs_mined, _tt_usgs_ref,
+                        sel, tt_series, _tt_year_idx, _mining_pref,
+                    )
+                    for sel, _ in _tt_slots
+                ]
 
-            yrange = None
-            if tt_shared_y:
-                _all_y: list[float] = []
-                for sd, _ in _tt_slot_results:
-                    for s in sd.values():
-                        y = (s.pct_change() * 100) if tt_view.startswith("Relative") else s
-                        _all_y.extend(y.dropna().tolist())
-                if _all_y:
-                    _gmin, _gmax = min(_all_y), max(_all_y)
-                    _pad = (_gmax - _gmin) * 0.05 if _gmax != _gmin else (abs(_gmax) * 0.1 or 1.0)
-                    _lower = (_gmin - _pad) if tt_view.startswith("Relative") else 0.0
-                    yrange = [_lower, _gmax + _pad]
+                yrange = None
+                if tt_shared_y:
+                    _all_y: list[float] = []
+                    for sd, _ in _tt_slot_results:
+                        for s in sd.values():
+                            y = (s.pct_change() * 100) if tt_view.startswith("Relative") else s
+                            _all_y.extend(y.dropna().tolist())
+                    if _all_y:
+                        _gmin, _gmax = min(_all_y), max(_all_y)
+                        _pad = (_gmax - _gmin) * 0.05 if _gmax != _gmin else (abs(_gmax) * 0.1 or 1.0)
+                        _lower = (_gmin - _pad) if tt_view.startswith("Relative") else 0.0
+                        yrange = [_lower, _gmax + _pad]
 
-            for (sel, color), (sd, notes) in zip(_tt_slots, _tt_slot_results):
-                for _note in notes:
-                    st.info(_note)
-                fig = _tt_build_chart(sd, sel, color, tt_view, yrange)
-                st.plotly_chart(fig, use_container_width=True)
+                for (sel, color), (sd, notes) in zip(_tt_slots, _tt_slot_results):
+                    for _note in notes:
+                        st.info(_note)
+                    fig = _tt_build_chart(sd, sel, color, tt_view, yrange)
+                    st.plotly_chart(fig, use_container_width=True)
 
 
 
@@ -1254,6 +1261,10 @@ if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
                     "countries with no connection to it are dropped automatically. Use this view "
                     "to spot dominant corridors, e.g. the main scrap suppliers to a processing hub."
                 )
+
+        # ── Primary graph slot: filled after the controls below are read, so the
+        # network diagram sits directly under the intro. ────────────────────
+        _fn_graph_slot = st.container()
 
         # ── View mode: interactive (draggable) is the default in both modes;
         # Advanced can switch back to the static Plotly view.
@@ -1509,42 +1520,60 @@ if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
             else period_label
         )
 
-        # ── Validation + render ───────────────────────────────────────────────────
-        if len(_fn_countries_final) < 2:
-            st.info("Select at least 2 countries (or a region cluster with other countries) to display the flow network.")
-        elif not fn_categories:
-            st.info("Select at least one product category.")
-        elif fn_view_mode == "Interactive (draggable)":
-            _fn_hidden_key = frozenset(fn_hidden_pairs)
-            try:
-                _fn_html = _build_flow_network_html_cached(
-                    baci_df=_baci_for_fn,
-                    active_years=tuple(_fn_active_years),
-                    countries=tuple(_fn_countries_final),
-                    categories=tuple(fn_categories),
-                    min_flow=fn_min_flow,
-                    show_imports=fn_show_imports,
-                    show_exports=fn_show_exports,
-                    focal_country=fn_focal_country,
-                    layout=fn_layout_code,
-                    physics_enabled=False,
-                    height_px=650,
-                    focal_only=fn_focal_only,
-                    hidden_pairs=_fn_hidden_key,
-                    prune_isolated=fn_prune_isolated,
-                )
-                components.html(_fn_html, height=680, scrolling=False)
-                st.caption(
-                    "**Drag** any node to reposition it. **Scroll** to zoom. "
-                    "**Drag empty canvas** to pan. Initial positions come from the "
-                    f"chosen layout preset (**{fn_layout_label}**). "
-                    f"Bubble size ∝ √(total BACI trade volume). "
-                    f"Arrow width ∝ √(flow volume). "
-                    f"Showing flows ≥ {fn_min_flow:,} t Pb. Period: {_fn_period_label}."
-                )
-            except ImportError as e:
-                st.error(str(e))
-                st.info("Falling back to the Static view.")
+        with _fn_graph_slot:
+            # ── Validation + render ───────────────────────────────────────────────────
+            if len(_fn_countries_final) < 2:
+                st.info("Select at least 2 countries (or a region cluster with other countries) to display the flow network.")
+            elif not fn_categories:
+                st.info("Select at least one product category.")
+            elif fn_view_mode == "Interactive (draggable)":
+                _fn_hidden_key = frozenset(fn_hidden_pairs)
+                try:
+                    _fn_html = _build_flow_network_html_cached(
+                        baci_df=_baci_for_fn,
+                        active_years=tuple(_fn_active_years),
+                        countries=tuple(_fn_countries_final),
+                        categories=tuple(fn_categories),
+                        min_flow=fn_min_flow,
+                        show_imports=fn_show_imports,
+                        show_exports=fn_show_exports,
+                        focal_country=fn_focal_country,
+                        layout=fn_layout_code,
+                        physics_enabled=False,
+                        height_px=650,
+                        focal_only=fn_focal_only,
+                        hidden_pairs=_fn_hidden_key,
+                        prune_isolated=fn_prune_isolated,
+                    )
+                    components.html(_fn_html, height=680, scrolling=False)
+                    st.caption(
+                        "**Drag** any node to reposition it. **Scroll** to zoom. "
+                        "**Drag empty canvas** to pan. Initial positions come from the "
+                        f"chosen layout preset (**{fn_layout_label}**). "
+                        f"Bubble size ∝ √(total BACI trade volume). "
+                        f"Arrow width ∝ √(flow volume). "
+                        f"Showing flows ≥ {fn_min_flow:,} t Pb. Period: {_fn_period_label}."
+                    )
+                except ImportError as e:
+                    st.error(str(e))
+                    st.info("Falling back to the Static view.")
+                    fig_fn = _build_flow_network_cached(
+                        baci_df=_baci_for_fn,
+                        active_years=tuple(_fn_active_years),
+                        countries=tuple(_fn_countries_final),
+                        categories=tuple(fn_categories),
+                        min_flow=fn_min_flow,
+                        show_imports=fn_show_imports,
+                        show_exports=fn_show_exports,
+                        focal_country=fn_focal_country,
+                        layout=fn_layout_code,
+                        focal_only=fn_focal_only,
+                        hidden_pairs=_fn_hidden_key,
+                        prune_isolated=fn_prune_isolated,
+                    )
+                    st.plotly_chart(fig_fn, use_container_width=True)
+            else:
+                _fn_hidden_key = frozenset(fn_hidden_pairs)
                 fig_fn = _build_flow_network_cached(
                     baci_df=_baci_for_fn,
                     active_years=tuple(_fn_active_years),
@@ -1560,30 +1589,13 @@ if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
                     prune_isolated=fn_prune_isolated,
                 )
                 st.plotly_chart(fig_fn, use_container_width=True)
-        else:
-            _fn_hidden_key = frozenset(fn_hidden_pairs)
-            fig_fn = _build_flow_network_cached(
-                baci_df=_baci_for_fn,
-                active_years=tuple(_fn_active_years),
-                countries=tuple(_fn_countries_final),
-                categories=tuple(fn_categories),
-                min_flow=fn_min_flow,
-                show_imports=fn_show_imports,
-                show_exports=fn_show_exports,
-                focal_country=fn_focal_country,
-                layout=fn_layout_code,
-                focal_only=fn_focal_only,
-                hidden_pairs=_fn_hidden_key,
-                prune_isolated=fn_prune_isolated,
-            )
-            st.plotly_chart(fig_fn, use_container_width=True)
-            st.caption(
-                f"Layout: **{fn_layout_label}**. "
-                f"Bubble size ∝ √(total BACI trade volume). "
-                f"Arrow width ∝ √(flow volume). "
-                f"Showing flows ≥ {fn_min_flow:,} t Pb between selected countries. "
-                f"Period: {_fn_period_label}."
-            )
+                st.caption(
+                    f"Layout: **{fn_layout_label}**. "
+                    f"Bubble size ∝ √(total BACI trade volume). "
+                    f"Arrow width ∝ √(flow volume). "
+                    f"Showing flows ≥ {fn_min_flow:,} t Pb between selected countries. "
+                    f"Period: {_fn_period_label}."
+                )
 
 
     _easy_assumptions_footer()
@@ -1705,6 +1717,10 @@ if _page in ("Production & Capacity", "Lead Accumulation", "Recycling Economy Sn
                     "All scales are logarithmic. For Lead Mining and Lead Refining, a ranked "
                     "country table is shown below the map."
                 )
+
+        # ── Primary map slot: filled after the controls below are read, so the
+        # map sits directly under the intro. ─────────────────────────────────
+        _prod_map_slot = st.container()
 
         _mining_refining_df3 = _load_mining_refining()
 
@@ -1937,7 +1953,8 @@ if _page in ("Production & Capacity", "Lead Accumulation", "Recycling Economy Sn
                             zmin_log=_g_zmin_log,
                             zmax_log=_g_zmax_log,
                         )
-                        st.plotly_chart(fig_prod, use_container_width=True)
+                        with _prod_map_slot:
+                            st.plotly_chart(fig_prod, use_container_width=True)
 
                         # ── Ranked table (reported data only) ────────────────────
                         if prod_dataset not in _ESTIMATED_DATASETS:
@@ -2067,9 +2084,11 @@ if _page in ("Production & Capacity", "Lead Accumulation", "Recycling Economy Sn
                             transition=dict(duration=200),
                         )],
                     )
-                    st.plotly_chart(fig_anim, use_container_width=True)
+                    with _prod_map_slot:
+                        st.plotly_chart(fig_anim, use_container_width=True)
 
-            st.caption(_caption)
+            with _prod_map_slot:
+                st.caption(_caption)
 
         # Easy-mode-only page-local data-source toggle, below the map. Applies
         # to this tab only; the global sidebar source is unchanged.
