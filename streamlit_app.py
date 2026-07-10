@@ -1344,7 +1344,7 @@ if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
                 fn_layout_label = st.selectbox(
                     "Initial layout",
                     options=list(_LAYOUT_LABELS.keys()),
-                    index=0,
+                    index=list(_LAYOUT_LABELS.keys()).index("Geographic centroids"),
                     key="fn_layout",
                     help=(
                         "**Circle**: even spacing around a ring (with focal at center).  "
@@ -1384,7 +1384,7 @@ if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
                 fn_layout_label = st.selectbox(
                     "Layout",
                     options=list(_fn_easy_layouts.keys()),
-                    index=0,
+                    index=list(_fn_easy_layouts.keys()).index("Geographic centroids"),
                     key="fn_layout_easy",
                 )
             with fn_lc1:
