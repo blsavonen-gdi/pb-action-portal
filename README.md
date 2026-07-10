@@ -24,6 +24,23 @@ A **View mode** toggle in the sidebar trades usability for control:
 - **Advanced** exposes every input (dataset, sources, time period, Pb-content
   factors) so you can adjust the model and challenge its assumptions.
 
+## Data & sources
+
+The Portal draws together third-party datasets that the Pb Action team has
+collected, cleaned, and harmonized. The datasets remain those of their original
+publishers; the model outputs, estimates, and BOTEC-type calculations are the
+project's own analysis. All values are expressed in tonnes of lead content.
+
+| Data | Source |
+|---|---|
+| Bilateral trade flows | BACI / CEPII (harmonized UN Comtrade) |
+| Mine & refined production | USGS, BGS |
+| Battery collection | Eurostat, BCI, ILZSG, national studies |
+| Literature figures | Published studies — per-figure citations on the **Literature Stats** tab |
+
+The **Recycling Economy Snapshot** and **Material Flow (Beta)** tabs are
+back-of-the-envelope (BOTEC) estimates, labeled as such in-app.
+
 ## Run locally
 
 ```bash
