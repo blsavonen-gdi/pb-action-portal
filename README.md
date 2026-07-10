@@ -14,7 +14,7 @@ It presents **one flat level of tabs**:
 | **Production & Capacity** | Where lead is mined, refined, and where batteries are made |
 | **Recycling Economy Snapshot** | Country recycling-economy overview |
 | **Material Flow (Beta)** | Experimental material-flow Sankey per country |
-| **Literature Stats** | Searchable library of sourced datapoints + a submission form |
+| **Literature Stats** | Searchable library of sourced datapoints |
 
 ## Easy vs. Advanced mode
 
@@ -33,19 +33,13 @@ streamlit run streamlit_app.py
 
 No password is required.
 
-## Literature Stats submissions → Google Sheet
+## Literature Stats submissions (deferred)
 
-The **Submit a new statistic** form on the Literature Stats tab appends each
-submission to a Google Sheet for review.
-
-1. Create a Google Cloud service account + JSON key; enable the **Google Sheets API**.
-2. Create a Google Sheet and share it (Editor) with the service account email.
-3. Copy `.streamlit/secrets.toml.example` to `.streamlit/secrets.toml` and fill in
-   the key + sheet id (locally), or paste the same into **App settings → Secrets**
-   on Streamlit Community Cloud.
-
-If the secret isn't configured, the form still works: on submit it offers the
-entry as a CSV download plus a pre-filled email link, so nothing is lost.
+A form for visitors to submit new datapoints (writing to a Google Sheet for
+review) is built but **disabled for now** — see `literature/submit.py` and the
+commented `render_submission_form()` call in `literature/app.py`. To re-enable it
+later: uncomment those two lines, restore `gspread` / `google-auth` in
+`requirements.txt`, and configure the secrets (`.streamlit/secrets.toml.example`).
 
 ## Relationship to the Toolkit
 

@@ -7,6 +7,6 @@ plotly>=5.22.0
 # Interactive (draggable) Flow Network view on the Trade Relationships tab
 pyvis>=0.3.2
 
-# Literature Stats submission form -> Google Sheet
-gspread>=6.0.0
-google-auth>=2.30.0
+# Literature Stats submission form -> Google Sheet (feature deferred; re-enable later)
+# gspread>=6.0.0
+# google-auth>=2.30.0

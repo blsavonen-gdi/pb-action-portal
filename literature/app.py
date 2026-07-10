@@ -19,7 +19,9 @@ import re
 import pandas as pd
 import streamlit as st
 
-from literature.submit import render_submission_form
+# Data-submission feature (Google Sheet) is deferred — re-enable later by
+# uncommenting this import and the render_submission_form() call in render().
+# from literature.submit import render_submission_form
 
 _ROOT = Path(__file__).resolve().parent.parent
 _DATA = _ROOT / "data" / "literature_datapoints.csv"
@@ -152,10 +154,12 @@ def _load() -> pd.DataFrame:
 
 # --------------------------------------------------------------------------
 def render() -> None:
-    """Public entry point: the searchable library, then the submission form
-    (the form always renders, even when the library takes an early return)."""
+    """Public entry point: the searchable literature library.
+
+    The data-submission form is deferred for now — re-enable it later by
+    uncommenting the render_submission_form() call below (and its import above)."""
     _render_library()
-    render_submission_form()
+    # render_submission_form()
 
 
 def _render_library() -> None:

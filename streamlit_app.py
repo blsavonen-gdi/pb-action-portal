@@ -27,7 +27,7 @@ from visualizations.lead_accumulation import (
 from visualizations.mass_balance_sankey import render_mass_balance_sankey_tab
 
 st.set_page_config(
-    page_title="Global Lead Analysis Toolkit",
+    page_title="Pb Action Data Portal",
     page_icon="🔋",
     layout="wide",
 )
@@ -375,7 +375,7 @@ if not st.session_state.disclaimer_accepted:
     with _d_logo_col:
         st.image("Pb Action Logo - Primary.png", width=90)
     with _d_title_col:
-        st.markdown("## Global Lead Analysis Toolkit")
+        st.markdown("## Pb Action Data Portal")
         st.caption("Partnership for Battery Action (Pb Action / GDI)")
     st.divider()
     st.markdown("### ⚠ A note on data quality before you begin")
@@ -415,7 +415,7 @@ with _hdr_logo:
 with _hdr_txt:
     st.markdown(
         "<div style='line-height:1.2;margin:0;'>"
-        "<span style='font-size:1.5rem;font-weight:700;'>Global Lead Analysis Toolkit</span><br>"
+        "<span style='font-size:1.5rem;font-weight:700;'>Pb Action Data Portal</span><br>"
         "<span style='color:#888;font-size:0.85rem;'>Partnership for Battery Action "
         "(Pb Action / GDI) &middot; all values in metric tonnes of lead content</span>"
         "</div>",
