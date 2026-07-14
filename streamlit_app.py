@@ -47,6 +47,56 @@ CAT_COLORS = {
     "ORE":   "#9E9E9E",  # ⬜ grey   — Ore & Concentrates
 }
 
+# ── Advanced (6-category) grouping ────────────────────────────────────────────
+# The Advanced-mode product grouping mirrors the sidebar "slide-out" (Pb content
+# factors) grouping: every lead HS code bucketed into one of the six material-
+# flow categories from HS_META. Colors reuse the shared 5-cat values where they
+# overlap (grey/blue/green/yellow) and add brown/purple for the two advanced-
+# only categories. Slag and Other Lead Products are excluded by default on every
+# tab (their codes exist only in the HS22 dataset).
+ADV_CAT_COLORS = {
+    "Mining Outputs":      "#9E9E9E",  # grey   (= Ore & Concentrates)
+    "Battery Inputs":      "#1E88E5",  # blue   (= Smelted Lead)
+    "New Batteries":       "#43A047",  # green
+    "Battery Waste":       "#FDD835",  # yellow (= Used Batteries)
+    "Slag":                "#8D6E63",  # brown
+    "Other Lead Products": "#7E57C2",  # purple
+}
+ADV_CATS_DEFAULT_OFF = frozenset({"Slag", "Other Lead Products"})
+# HS codes off by default (Advanced): every code in an off-by-default category.
+_ADV_DEFAULT_OFF_HS = {
+    hs for hs, m in HS_META.items() if m["cat"] in ADV_CATS_DEFAULT_OFF
+}
+
+
+def _adv_cat_of(hs) -> str | None:
+    """Return the 6-category (material-flow) label for an HS code, or None."""
+    return HS_META.get(int(hs), {}).get("cat")
+
+
+def _advanced_hs_picker(present_products: list[int], key_prefix: str) -> list[int]:
+    """Render per-HS tick boxes grouped by the six slide-out categories and
+    return the selected HS codes. Slag and Other Lead Products default to
+    unchecked. Only codes present in the active dataset are shown."""
+    st.caption("Products to include (by HS code)")
+    selected: list[int] = []
+    for _cat in CATEGORIES_ORDERED:
+        _codes = [p for p in present_products if _adv_cat_of(p) == _cat]
+        if not _codes:
+            continue
+        st.markdown(f"**{_cat}**")
+        _default_on = _cat not in ADV_CATS_DEFAULT_OFF
+        _cols = st.columns(3)
+        for _i, _hs in enumerate(_codes):
+            with _cols[_i % 3]:
+                if st.checkbox(
+                    f"{_hs} — {HS_META[_hs]['name']}",
+                    value=_default_on,
+                    key=f"{key_prefix}_hs_{_hs}",
+                ):
+                    selected.append(_hs)
+    return selected
+
 st.markdown("""
 <style>
 /* ── Tighten the top of the page so the header hugs the top ───────────── */
@@ -98,6 +148,8 @@ def _build_flow_network_cached(
     focal_only: bool,
     hidden_pairs: frozenset,
     prune_isolated: bool,
+    grouping: str = "trade",
+    products: tuple[int, ...] | None = None,
 ):
     return build_flow_network(
         baci_df=baci_df,
@@ -112,6 +164,8 @@ def _build_flow_network_cached(
         focal_only=focal_only,
         hidden_pairs=set(hidden_pairs),
         prune_isolated=prune_isolated,
+        grouping=grouping,
+        products=products,
     )
 
 
@@ -131,6 +185,8 @@ def _build_flow_network_html_cached(
     focal_only: bool,
     hidden_pairs: frozenset,
     prune_isolated: bool,
+    grouping: str = "trade",
+    products: tuple[int, ...] | None = None,
 ) -> str:
     return build_flow_network_html(
         baci_df=baci_df,
@@ -147,6 +203,8 @@ def _build_flow_network_html_cached(
         focal_only=focal_only,
         hidden_pairs=set(hidden_pairs),
         prune_isolated=prune_isolated,
+        grouping=grouping,
+        products=products,
     )
 
 
@@ -492,7 +550,7 @@ if _page in _DATA_TABS and not ADVANCED:
     period_label = f"{active_years[0]}–{active_years[-1]} average"
     st.sidebar.caption(f"Window: {period_label}")
     pb_factors = {
-        hs: (0.0 if hs in _DEFAULT_OFF else meta["default"])
+        hs: (0.0 if hs in _ADV_DEFAULT_OFF_HS else meta["default"])
         for hs, meta in HS_META.items()
     }
 
@@ -581,7 +639,7 @@ if _page in _DATA_TABS and ADVANCED:
                 st.markdown(f"**{_cat}**")
                 for _hs, _meta in _cat_codes:
                     _chk_col, _ctrl_col = st.columns([5, 4])
-                    _default_on = _hs not in _DEFAULT_OFF
+                    _default_on = _hs not in _ADV_DEFAULT_OFF_HS
                     with _chk_col:
                         _enabled = st.checkbox(
                             f"{_hs} — {_meta['name']}",
@@ -636,46 +694,86 @@ def _strip_cat_emoji(label: str) -> str:
 
 # ── Trade Trends: series and chart helpers ────────────────────────────────────
 
-_TT_HS_ALL   = {260700, 780110, 780191, 780199, 780200, 850710, 850720, 850790, 854810, 282410, 282490}
-_TT_HS_SMELT = {780110, 780191, 780199}
-_TT_HS_REF   = {780110}
-_TT_HS_SCRAP = {780200}
-_TT_HS_UBATT = {854810}
-_TT_HS_NBATT = {850710, 850720}
-_TT_HS_ORE   = {260700}
+# Waste-battery HS code differs between the HS12 and HS22 datasets.
+_TT_UBATT_CODE = 854911 if _dataset_key == "hs22" else 854810
+_TT_HS_ALL = {260700, 780110, 780191, 780199, 780200, 850710, 850720,
+              850790, _TT_UBATT_CODE, 282410, 282490}
 
-# Swap waste battery HS code for HS22 dataset
-if _dataset_key == "hs22":
-    _TT_HS_UBATT = {854911}
-    _TT_HS_ALL   = {260700, 780110, 780191, 780199, 780200, 850710, 850720, 850790, 854911, 282410, 282490}
+# Base series name (without the "Imports"/"Exports" suffix) → set of HS codes.
+# Covers both the five trade categories (Easy) and the six material-flow
+# categories (Advanced). "Smelted Lead" (Easy) and "Battery Inputs" (Advanced)
+# are the same codes; "New Batteries" is shared by both groupings.
+_TT_BASE_HS: dict[str, set[int]] = {
+    "Total Lead-Related":  _TT_HS_ALL,
+    # ── five trade categories (Easy) ──
+    "New Batteries":       {850710, 850720},
+    "Used Batteries":      {_TT_UBATT_CODE},
+    "Lead Scrap":          {780200},
+    "Smelted Lead":        {282410, 282490, 780110, 780191, 780199, 850790},
+    "Ore & Concentrates":  {260700},
+    # ── six material-flow categories (Advanced) ──
+    "Mining Outputs":      {260700},
+    "Battery Inputs":      {282410, 282490, 780110, 780191, 780199, 850790},
+    "Battery Waste":       {780200, _TT_UBATT_CODE},
+    "Slag":                {262021, 262029},
+    "Other Lead Products": {780411, 780419, 780420, 780600},
+}
 
-_TT_SERIES_NAMES: list[str] = [
+# Mode-specific Series options.
+_TT_SERIES_EASY: list[str] = [
     "Total Lead-Related Imports", "Total Lead-Related Exports",
-    "Smelted Lead Imports", "Smelted Lead Exports",
-    "Refined Lead Imports", "Refined Lead Exports",
+    "New Batteries Imports", "New Batteries Exports",
+    "Used Batteries Imports", "Used Batteries Exports",
     "Lead Scrap Imports", "Lead Scrap Exports",
-    "Waste Battery Imports", "Waste Battery Exports",
-    "New Battery Imports", "New Battery Exports",
-    "Ore Imports", "Ore Exports",
-    "Lead Mined", "Lead Smelted/Refined",
+    "Smelted Lead Imports", "Smelted Lead Exports",
+    "Ore & Concentrates Imports", "Ore & Concentrates Exports",
+    "Lead Mined", "Lead Refined",
 ]
+_TT_SERIES_ADV: list[str] = [
+    "Total Lead-Related Imports", "Total Lead-Related Exports",
+    "Mining Outputs Imports", "Mining Outputs Exports",
+    "Battery Inputs Imports", "Battery Inputs Exports",
+    "New Batteries Imports", "New Batteries Exports",
+    "Battery Waste Imports", "Battery Waste Exports",
+    "Slag Imports", "Slag Exports",
+    "Other Lead Products Imports", "Other Lead Products Exports",
+    "Lead Mined", "Lead Refined/Smelted",
+]
+
+# Production series (BGS/USGS) — not derived from BACI trade flows.
+_TT_PROD_SERIES: frozenset[str] = frozenset({
+    "Lead Mined", "Lead Refined", "Lead Refined/Smelted", "Lead Smelted/Refined",
+})
 
 _TT_SERIES_COLORS: dict[str, str] = {
     "Total Lead-Related Imports":  "#1f77b4",
     "Total Lead-Related Exports":  "#ff7f0e",
-    "Smelted Lead Imports":        "#2ca02c",
-    "Smelted Lead Exports":        "#d62728",
-    "Refined Lead Imports":        "#9467bd",
-    "Refined Lead Exports":        "#8c564b",
-    "Lead Scrap Imports":          "#e377c2",
-    "Lead Scrap Exports":          "#7f7f7f",
-    "Waste Battery Imports":       "#bcbd22",
-    "Waste Battery Exports":       "#17becf",
-    "New Battery Imports":         "#aec7e8",
-    "New Battery Exports":         "#ffbb78",
-    "Ore Imports":                 "#98df8a",
-    "Ore Exports":                 "#ff9896",
+    # five trade categories
+    "New Batteries Imports":       "#43A047",
+    "New Batteries Exports":       "#1B5E20",
+    "Used Batteries Imports":      "#FDD835",
+    "Used Batteries Exports":      "#F9A825",
+    "Lead Scrap Imports":          "#FB8C00",
+    "Lead Scrap Exports":          "#E65100",
+    "Smelted Lead Imports":        "#1E88E5",
+    "Smelted Lead Exports":        "#0D47A1",
+    "Ore & Concentrates Imports":  "#9E9E9E",
+    "Ore & Concentrates Exports":  "#616161",
+    # six material-flow categories
+    "Mining Outputs Imports":      "#9E9E9E",
+    "Mining Outputs Exports":      "#616161",
+    "Battery Inputs Imports":      "#1E88E5",
+    "Battery Inputs Exports":      "#0D47A1",
+    "Battery Waste Imports":       "#FDD835",
+    "Battery Waste Exports":       "#F9A825",
+    "Slag Imports":                "#8D6E63",
+    "Slag Exports":                "#5D4037",
+    "Other Lead Products Imports": "#7E57C2",
+    "Other Lead Products Exports": "#4527A0",
+    # production series
     "Lead Mined":                  "#6a3d9a",
+    "Lead Refined":                "#b15928",
+    "Lead Refined/Smelted":        "#b15928",
     "Lead Smelted/Refined":        "#b15928",
 }
 
@@ -689,21 +787,18 @@ def _tt_baci_series(
 ) -> pd.Series:
     is_import = "Import" in series
     side = baci["Importer"].isin(countries) if is_import else baci["Exporter"].isin(countries)
-    if   series.startswith("Total"):         hs = _TT_HS_ALL
-    elif series.startswith("Smelted Lead"):  hs = _TT_HS_SMELT
-    elif series.startswith("Refined Lead"):  hs = _TT_HS_REF
-    elif series.startswith("Lead Scrap"):    hs = _TT_HS_SCRAP
-    elif series.startswith("Waste Battery"): hs = _TT_HS_UBATT
-    elif series.startswith("New Battery"):   hs = _TT_HS_NBATT
-    elif series.startswith("Ore"):           hs = _TT_HS_ORE
-    else:                                    return pd.Series(dtype=float)
+    # Strip the trailing "Imports"/"Exports" word to get the category base name.
+    base = series.rsplit(" ", 1)[0]
+    hs = _TT_BASE_HS.get(base)
+    if not hs:
+        return pd.Series(dtype=float)
     return baci[side & baci["Product"].isin(hs)].groupby("Year")["actual_lead"].sum()
 
 
 def _tt_bgs_series(
     bgs: pd.DataFrame, countries: list[str], series: str
 ) -> pd.Series:
-    commodity = "lead, mine" if series == "Lead Mined" else "lead, refined"
+    commodity = "lead, mine" if "Mined" in series else "lead, refined"
     bgs_names = {_BACI_TO_BGS_NAME.get(c, c) for c in countries}
     mask = bgs["country_trans"].isin(bgs_names) & (bgs["bgs_commodity_trans"] == commodity)
     filtered = bgs[mask]
@@ -718,7 +813,7 @@ def _tt_usgs_series(
     countries: list[str],
     series: str,
 ) -> pd.Series:
-    usgs_df = usgs_mined if series == "Lead Mined" else usgs_refined
+    usgs_df = usgs_mined if "Mined" in series else usgs_refined
     usgs_names = {_BACI_TO_USGS_NAME.get(c, c) for c in countries}
     filtered = usgs_df[usgs_df["country"].isin(usgs_names)]
     if filtered.empty:
@@ -745,7 +840,7 @@ def _tt_compute_slot(
     result: dict[str, pd.Series] = {}
     notes: list[str] = []
     for s in series_list:
-        if s in ("Lead Mined", "Lead Smelted/Refined"):
+        if s in _TT_PROD_SERIES:
             if mining_pref == "BGS":
                 raw = _tt_bgs_series(bgs, countries, s)
                 if raw.dropna().empty:
@@ -907,24 +1002,12 @@ if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
         _present_products = sorted(int(p) for p in baci_df["Product"].dropna().unique())
 
         if ADVANCED:
-            st.caption("Products to include (by HS code)")
-            _selected_hs: list[int] = []
-            for _cat in CATEGORIES_ORDERED:
-                _codes = [p for p in _present_products if HS_META.get(p, {}).get("cat") == _cat]
-                if not _codes:
-                    continue
-                st.markdown(f"**{_cat}**")
-                _cols = st.columns(3)
-                for _i, _hs in enumerate(_codes):
-                    with _cols[_i % 3]:
-                        if st.checkbox(
-                            f"{_hs} — {HS_META[_hs]['name']}",
-                            value=True,
-                            key=f"ta_hs_{_hs}",
-                        ):
-                            _selected_hs.append(_hs)
+            # Per-HS tick boxes grouped by the six slide-out categories;
+            # Slag + Other Lead Products default off.
+            _selected_hs = _advanced_hs_picker(_present_products, "ta")
             if not _selected_hs:
-                _selected_hs = list(_present_products)
+                _selected_hs = [p for p in _present_products
+                                if _adv_cat_of(p) not in ADV_CATS_DEFAULT_OFF]
         else:
             st.caption("Product categories to include")
             _cat_cols = st.columns(len(_CAT_LABEL_LIST))
@@ -939,15 +1022,27 @@ if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
                             if CATEGORY_MAP.get(p) in _selected_cats_easy]
 
         # Categories present among the selected HS codes (drives the category
-        # filter passed to the map builders + the display label).
-        _cats_present = [c for c in ["BATT", "USED", "SCRAP", "FEED", "ORE"]
-                         if any(CATEGORY_MAP.get(p) == c for p in _selected_hs)]
-        _cat_display_label = ", ".join(_code_to_name[c] for c in _cats_present) or "no products"
+        # filter passed to the map builders + the display label). Advanced uses
+        # the six material-flow categories; Easy uses the five trade categories.
+        if ADVANCED:
+            _cats_present = [c for c in CATEGORIES_ORDERED
+                             if any(_adv_cat_of(p) == c for p in _selected_hs)]
+            _cat_display_label = ", ".join(_cats_present) or "no products"
+        else:
+            _cats_present = [c for c in ["BATT", "USED", "SCRAP", "FEED", "ORE"]
+                             if any(CATEGORY_MAP.get(p) == c for p in _selected_hs)]
+            _cat_display_label = ", ".join(_code_to_name[c] for c in _cats_present) or "no products"
 
         # ── Build map + tables, filtered to the selected HS codes ─────────────
+        # In Advanced mode the category column is re-bucketed to the six
+        # material-flow groups so codes outside the five trade categories
+        # (Slag, Other Lead Products) survive the builders' category filter.
         display_baci = _build_display_baci(baci_df, active_years, year)
-        _disp_f = display_baci[display_baci["Product"].isin(_selected_hs)]
-        _baci_f = baci_df[baci_df["Product"].isin(_selected_hs)]
+        _disp_f = display_baci[display_baci["Product"].isin(_selected_hs)].copy()
+        _baci_f = baci_df[baci_df["Product"].isin(_selected_hs)].copy()
+        if ADVANCED:
+            _disp_f["category"] = _disp_f["Product"].map(_adv_cat_of)
+            _baci_f["category"] = _baci_f["Product"].map(_adv_cat_of)
         _period_note = f"  ({period_label})" if len(active_years) > 1 else ""
 
         with _map_slot:
@@ -1169,9 +1264,9 @@ if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
             tt_rc1, tt_rc2, tt_rc3 = st.columns([3, 1, 1])
             with tt_rc1:
                 tt_series = st.multiselect(
-                    "Series", _TT_SERIES_NAMES,
+                    "Series", _TT_SERIES_ADV,
                     default=["Total Lead-Related Imports", "Total Lead-Related Exports"],
-                    key="tt_series",
+                    key="tt_series_adv",
                 )
             with tt_rc2:
                 tt_view = st.radio(
@@ -1183,9 +1278,9 @@ if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
                 tt_shared_y = st.checkbox("Shared y-axis", value=True, key="tt_shared_y")
         else:
             tt_series = st.multiselect(
-                "Series", _TT_SERIES_NAMES,
+                "Series", _TT_SERIES_EASY,
                 default=["Total Lead-Related Imports", "Total Lead-Related Exports"],
-                key="tt_series",
+                key="tt_series_easy",
             )
             tt_view = "Absolute (tonnes Pb)"
             tt_shared_y = True
@@ -1393,14 +1488,30 @@ if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
             fn_cluster_region = None
         fn_layout_code = _LAYOUT_LABELS[fn_layout_label]
 
-        # ── Product categories (same five as Trade Map, incl. Ore) ────────────
-        st.caption("Product categories to include")
-        fn_cat_cols = st.columns(len(_CAT_LABEL_LIST))
-        fn_categories: list[str] = []
-        for _i, _lbl in enumerate(_CAT_LABEL_LIST):
-            with fn_cat_cols[_i]:
-                if st.checkbox(_lbl, value=True, key=f"fn_cat_{_CAT_LABELS[_lbl]}"):
-                    fn_categories.append(_CAT_LABELS[_lbl])
+        # ── Product selection ─────────────────────────────────────────────────
+        # Easy: the five trade categories (arrows coloured by 5-cat palette).
+        # Advanced: per-HS tick boxes grouped by the six slide-out categories
+        # (arrows coloured by 6-cat palette; Slag + Other Lead Products off).
+        _fn_present = sorted(int(p) for p in baci_df["Product"].dropna().unique())
+        if ADVANCED:
+            fn_selected_hs = _advanced_hs_picker(_fn_present, "fn")
+            if not fn_selected_hs:
+                fn_selected_hs = [p for p in _fn_present
+                                  if _adv_cat_of(p) not in ADV_CATS_DEFAULT_OFF]
+            fn_categories = [c for c in CATEGORIES_ORDERED
+                             if any(_adv_cat_of(p) == c for p in fn_selected_hs)]
+            fn_grouping = "advanced"
+            fn_products: tuple[int, ...] | None = tuple(sorted(fn_selected_hs))
+        else:
+            st.caption("Product categories to include")
+            fn_cat_cols = st.columns(len(_CAT_LABEL_LIST))
+            fn_categories = []
+            for _i, _lbl in enumerate(_CAT_LABEL_LIST):
+                with fn_cat_cols[_i]:
+                    if st.checkbox(_lbl, value=True, key=f"fn_cat_{_CAT_LABELS[_lbl]}"):
+                        fn_categories.append(_CAT_LABELS[_lbl])
+            fn_grouping = "trade"
+            fn_products = None
 
         # ── Flow direction (Advanced only; Easy always shows both) ────────────
         if ADVANCED:
@@ -1544,6 +1655,8 @@ if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
                         focal_only=fn_focal_only,
                         hidden_pairs=_fn_hidden_key,
                         prune_isolated=fn_prune_isolated,
+                        grouping=fn_grouping,
+                        products=fn_products,
                     )
                     components.html(_fn_html, height=680, scrolling=False)
                     st.caption(
@@ -1570,6 +1683,8 @@ if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
                         focal_only=fn_focal_only,
                         hidden_pairs=_fn_hidden_key,
                         prune_isolated=fn_prune_isolated,
+                        grouping=fn_grouping,
+                        products=fn_products,
                     )
                     st.plotly_chart(fig_fn, use_container_width=True)
             else:
@@ -1587,6 +1702,8 @@ if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
                     focal_only=fn_focal_only,
                     hidden_pairs=_fn_hidden_key,
                     prune_isolated=fn_prune_isolated,
+                    grouping=fn_grouping,
+                    products=fn_products,
                 )
                 st.plotly_chart(fig_fn, use_container_width=True)
                 st.caption(

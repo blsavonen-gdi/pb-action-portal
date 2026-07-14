@@ -84,8 +84,53 @@ _CAT_COLORS: dict[str, str] = {
     "Other Lead Products": "#7E57C2",
 }
 
-# HS codes excluded from the calculation by default (user can re-enable)
-_DEFAULT_OFF: set[int] = {262021, 262029}
+# HS codes excluded from the calculation by default (user can re-enable).
+# Slag (262021/262029) and Other Lead Products (780411/780419/780420/780600).
+_DEFAULT_OFF: set[int] = {262021, 262029, 780411, 780419, 780420, 780600}
+
+# ── Easy-mode (5-category) grouping ───────────────────────────────────────────
+# Mirrors the five trade categories used on the Trade tabs. Battery Waste is
+# split into Used Batteries + Lead Scrap; Battery Inputs -> Smelted Lead;
+# Mining Outputs -> Ore & Concentrates.
+_EASY_CATS_ORDERED: list[str] = [
+    "Ore & Concentrates", "Smelted Lead", "New Batteries",
+    "Used Batteries", "Lead Scrap",
+]
+_EASY_CAT_COLORS: dict[str, str] = {
+    "Ore & Concentrates": "#9E9E9E",  # grey
+    "Smelted Lead":       "#1E88E5",  # blue
+    "New Batteries":      "#43A047",  # green
+    "Used Batteries":     "#FDD835",  # yellow
+    "Lead Scrap":         "#FB8C00",  # orange
+}
+_HS_EASY_CAT: dict[int, str] = {
+    260700: "Ore & Concentrates",
+    282410: "Smelted Lead", 282490: "Smelted Lead",
+    780110: "Smelted Lead", 780191: "Smelted Lead",
+    780199: "Smelted Lead", 850790: "Smelted Lead",
+    850710: "New Batteries", 850720: "New Batteries",
+    854810: "Used Batteries", 854911: "Used Batteries",
+    780200: "Lead Scrap",
+}
+
+# Per-grouping settings: (HS->category map, ordered category list, mining-label).
+# "advanced" uses the six material-flow categories from HS_META; the mine
+# production folds into "Mining Outputs". "easy" uses the five trade categories;
+# mine production folds into "Ore & Concentrates".
+def _grouping_config(grouping: str):
+    if grouping == "easy":
+        return (
+            lambda hs: _HS_EASY_CAT.get(int(hs)),
+            _EASY_CATS_ORDERED,
+            _EASY_CAT_COLORS,
+            "Ore & Concentrates",
+        )
+    return (
+        lambda hs: HS_META.get(int(hs), {}).get("cat", "Other"),
+        CATEGORIES_ORDERED,
+        _CAT_COLORS,
+        "Mining Outputs",
+    )
 
 # mined.csv (USGS) country names → BACI country names
 _MINING_TO_BACI: dict[str, str] = {
@@ -172,6 +217,7 @@ def compute_balance(
     is_region: bool,
     region_map: dict[str, str],
     pb_factors: dict[int, float],
+    grouping: str = "advanced",
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Compute annual net lead balance and HS-level detail.
@@ -212,8 +258,12 @@ def compute_balance(
 
     hs_year = imp_agg.merge(exp_agg, on=["Year", "Product"], how="outer").fillna(0)
     hs_year["hs_name"]  = hs_year["Product"].map(lambda x: HS_META.get(int(x), {}).get("name", str(x)))
+    # hs_year.category stays on the 6-cat scheme (drives the Advanced HS table).
     hs_year["category"] = hs_year["Product"].map(lambda x: HS_META.get(int(x), {}).get("cat", "Other"))
     hs_year["net_t"]    = hs_year["imports_t"] - hs_year["exports_t"]
+
+    # Active grouping (5-cat Easy or 6-cat Advanced) drives the annual bucketing.
+    cat_of, cats_ordered, _grp_colors, mining_label = _grouping_config(grouping)
 
     # ── Annual BGS mining ─────────────────────────────────────────────────────
     mining_annual = (
@@ -222,9 +272,10 @@ def compute_balance(
         .rename(columns={"year": "Year", "value_metric_t": "_bgs"})
     )
 
-    # ── Annual category net totals (from trade) ───────────────────────────────
+    # ── Annual category net totals (from trade), bucketed per active grouping ──
+    _grp = hs_year.assign(_gcat=hs_year["Product"].map(cat_of)).dropna(subset=["_gcat"])
     cat_annual = (
-        hs_year.groupby(["Year", "category"])["net_t"]
+        _grp.groupby(["Year", "_gcat"])["net_t"]
         .sum().unstack(fill_value=0).reset_index()
     )
 
@@ -234,22 +285,21 @@ def compute_balance(
     annual = annual.merge(cat_annual, on="Year", how="left").fillna(0)
     annual = annual.merge(mining_annual, on="Year", how="left").fillna({"_bgs": 0.0})
 
-    # Mining Outputs = BGS mine production + net ore trade (260700)
-    ore_net_col = "Mining Outputs"  # cat_annual column for 260700 after unstack
-    if ore_net_col in annual.columns:
-        annual["Mining Outputs"] = annual["_bgs"] + annual[ore_net_col]
+    # Mining category = BGS/USGS mine production + net ore trade (260700)
+    if mining_label in annual.columns:
+        annual[mining_label] = annual["_bgs"] + annual[mining_label]
     else:
-        annual["Mining Outputs"] = annual["_bgs"]
+        annual[mining_label] = annual["_bgs"]
     annual = annual.drop(columns=["_bgs"])
 
-    for cat in CATEGORIES_ORDERED:
+    for cat in cats_ordered:
         if cat not in annual.columns:
             annual[cat] = 0.0
 
-    trade_cats = [c for c in CATEGORIES_ORDERED if c != "Mining Outputs"]
-    annual["Total"] = annual["Mining Outputs"] + annual[trade_cats].sum(axis=1)
+    trade_cats = [c for c in cats_ordered if c != mining_label]
+    annual["Total"] = annual[mining_label] + annual[trade_cats].sum(axis=1)
     annual = (
-        annual[["Year", "Mining Outputs"] + trade_cats + ["Total"]]
+        annual[["Year", mining_label] + trade_cats + ["Total"]]
         .sort_values("Year").reset_index(drop=True)
     )
 
@@ -385,7 +435,15 @@ def _annual_bar_chart(annual_df: pd.DataFrame, sidebar_year: int, label: str) ->
     return fig
 
 
-def _bar_chart(annual_df: pd.DataFrame, selected_year: int, label: str) -> go.Figure:
+def _bar_chart(
+    annual_df: pd.DataFrame,
+    selected_year: int,
+    label: str,
+    cats_ordered: list[str] | None = None,
+    cat_colors: dict[str, str] | None = None,
+) -> go.Figure:
+    cats_ordered = cats_ordered or CATEGORIES_ORDERED
+    cat_colors = cat_colors or _CAT_COLORS
     row = annual_df[annual_df["Year"] == selected_year]
     if row.empty:
         return go.Figure()
@@ -393,14 +451,14 @@ def _bar_chart(annual_df: pd.DataFrame, selected_year: int, label: str) -> go.Fi
     fig = go.Figure()
     total_kt = 0.0
 
-    for cat in CATEGORIES_ORDERED:
+    for cat in cats_ordered:
         val = float(row[cat].values[0]) if cat in row.columns else 0.0
         val_kt = _sig2(val / 1000)
         total_kt += val_kt
         fig.add_trace(go.Bar(
             x=[cat], y=[val_kt],
             name=cat,
-            marker_color=_CAT_COLORS.get(cat, "#9E9E9E"),
+            marker_color=cat_colors.get(cat, "#9E9E9E"),
             hovertemplate=f"<b>{cat}</b><br>%{{y:+,.2f}} kt Pb<extra></extra>",
         ))
 
@@ -710,8 +768,14 @@ def render_lead_accumulation_tab(
         st.info(_mine_src_note)
 
     # ── Compute ───────────────────────────────────────────────────────────────
+    _grouping = "advanced" if advanced else "easy"
+    _cats_ordered, _cat_colors = (
+        (CATEGORIES_ORDERED, _CAT_COLORS) if advanced
+        else (_EASY_CATS_ORDERED, _EASY_CAT_COLORS)
+    )
     annual_df, hs_year_df = compute_balance(
-        master_baci, mined_df, selection, is_region, region_map, pb_factors
+        master_baci, mined_df, selection, is_region, region_map, pb_factors,
+        grouping=_grouping,
     )
 
     if annual_df.empty or annual_df["Total"].abs().sum() < 0.001:
@@ -748,13 +812,14 @@ def render_lead_accumulation_tab(
     _cat_col, _map_col = st.columns(2)
     with _cat_col:
         st.plotly_chart(
-            _bar_chart(annual_df, selected_year, selection),
+            _bar_chart(annual_df, selected_year, selection, _cats_ordered, _cat_colors),
             use_container_width=True,
         )
+        _mining_lbl = "Mining Outputs" if advanced else "Ore & Concentrates"
         st.caption(
             "Each bar shows one category's net contribution to the total balance in the "
             f"selected year ({selected_year}, set via the sidebar Year slider). "
-            "Mining Outputs = BGS/USGS mine production + net ore (HS 260700) trade."
+            f"{_mining_lbl} = BGS/USGS mine production + net ore (HS 260700) trade."
         )
     with _map_col:
         st.plotly_chart(

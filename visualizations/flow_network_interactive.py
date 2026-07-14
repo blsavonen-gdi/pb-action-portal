@@ -20,9 +20,11 @@ import pandas as pd
 
 from visualizations.flow_network import (
     _ABBREV,
+    _ADV_HS_CAT,
     _CAT_COLORS,
     _CAT_DISPLAY,
     _country_positions,
+    _grouping_maps,
     _label,
 )
 
@@ -66,6 +68,8 @@ def build_flow_network_html(
     focal_only: bool = False,
     hidden_pairs: set[frozenset[str]] | None = None,
     prune_isolated: bool = False,
+    grouping: str = "trade",
+    products: tuple[int, ...] | None = None,
 ) -> str:
     """Return a self-contained HTML string for an interactive draggable flow network.
 
@@ -81,6 +85,11 @@ def build_flow_network_html(
         ) from e
 
     df = baci_df[baci_df["Year"].isin(active_years)]
+    cat_colors, cat_display = _grouping_maps(grouping)
+    if grouping == "advanced":
+        df = df.assign(category=df["Product"].map(_ADV_HS_CAT))
+    if products is not None:
+        df = df[df["Product"].isin(products)]
     n_years = max(len(active_years), 1)
     country_set = set(countries)
 
@@ -141,7 +150,7 @@ def build_flow_network_html(
         countries,
         focal_country=focal_country,
         layout=layout,
-        baci_df=baci_df,
+        baci_df=df,
         active_years=active_years,
         categories=categories,
     )
@@ -202,9 +211,9 @@ def build_flow_network_html(
     for _, row in flows.iterrows():
         exp, imp, cat = row["Exporter"], row["Importer"], row["category"]
         vol = float(row["actual_lead"])
-        color = _CAT_COLORS.get(cat, "#555")
+        color = cat_colors.get(cat, "#555")
         width = max(1.5, 1.0 + math.sqrt(vol / max_flow) * 7.0)
-        title = f"{exp} → {imp}\n{_CAT_DISPLAY.get(cat, cat)}: {vol:,.0f} t Pb"
+        title = f"{exp} → {imp}\n{cat_display.get(cat, cat)}: {vol:,.0f} t Pb"
         net.add_edge(
             exp,
             imp,

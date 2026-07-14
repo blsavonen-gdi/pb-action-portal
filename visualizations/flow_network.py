@@ -66,6 +66,38 @@ _CAT_DISPLAY: dict[str, str] = {
     "ORE":   "Ore & Concentrates (ORE)",
 }
 
+# ── Advanced (6-category) grouping ────────────────────────────────────────────
+# Used when grouping == "advanced": arrows are coloured by the six material-flow
+# categories (mirrors the slide-out grouping) instead of the five trade codes.
+_ADV_CAT_COLORS: dict[str, str] = {
+    "Mining Outputs":      "#9E9E9E",  # grey
+    "Battery Inputs":      "#1E88E5",  # blue
+    "New Batteries":       "#43A047",  # green
+    "Battery Waste":       "#FDD835",  # yellow
+    "Slag":                "#8D6E63",  # brown
+    "Other Lead Products": "#7E57C2",  # purple
+}
+_ADV_CAT_DISPLAY: dict[str, str] = {c: c for c in _ADV_CAT_COLORS}
+# HS code → 6-category label (both HS12 and HS22 waste-battery codes covered).
+_ADV_HS_CAT: dict[int, str] = {
+    260700: "Mining Outputs",
+    282410: "Battery Inputs", 282490: "Battery Inputs",
+    780110: "Battery Inputs", 780191: "Battery Inputs", 780199: "Battery Inputs",
+    850790: "Battery Inputs",
+    850710: "New Batteries", 850720: "New Batteries",
+    780200: "Battery Waste", 854810: "Battery Waste", 854911: "Battery Waste",
+    262021: "Slag", 262029: "Slag",
+    780411: "Other Lead Products", 780419: "Other Lead Products",
+    780420: "Other Lead Products", 780600: "Other Lead Products",
+}
+
+
+def _grouping_maps(grouping: str) -> tuple[dict, dict]:
+    """Return (cat_colors, cat_display) for the requested grouping."""
+    if grouping == "advanced":
+        return _ADV_CAT_COLORS, _ADV_CAT_DISPLAY
+    return _CAT_COLORS, _CAT_DISPLAY
+
 # ── Country label abbreviations (BACI names) ──────────────────────────────────
 
 _ABBREV: dict[str, str] = {
@@ -393,6 +425,8 @@ def build_flow_network(
     focal_only: bool = False,
     hidden_pairs: set[frozenset[str]] | None = None,
     prune_isolated: bool = False,
+    grouping: str = "trade",
+    products: tuple[int, ...] | None = None,
 ) -> go.Figure:
     """
     Build a schematic flow-network figure.
@@ -414,6 +448,11 @@ def build_flow_network(
                      country. Focal country itself is always kept.
     """
     df = baci_df[baci_df["Year"].isin(active_years)]
+    cat_colors, cat_display = _grouping_maps(grouping)
+    if grouping == "advanced":
+        df = df.assign(category=df["Product"].map(_ADV_HS_CAT))
+    if products is not None:
+        df = df[df["Product"].isin(products)]
     n_years = len(active_years)
     country_set = set(countries)
 
@@ -480,7 +519,7 @@ def build_flow_network(
         countries,
         focal_country=focal_country,
         layout=layout,
-        baci_df=baci_df,
+        baci_df=df,
         active_years=active_years,
         categories=categories,
     )
@@ -505,7 +544,7 @@ def build_flow_network(
 
         x1, y1 = positions[exp]
         x2, y2 = positions[imp]
-        color = _CAT_COLORS.get(cat, "#555")
+        color = cat_colors.get(cat, "#555")
 
         # Arrow width scaled by volume (sqrt)
         line_width = max(1.0, 1.0 + math.sqrt(vol / max_flow) * 7.0)
@@ -518,7 +557,7 @@ def build_flow_network(
 
         hover = (
             f"<b>{exp} → {imp}</b><br>"
-            f"{_CAT_DISPLAY.get(cat, cat)}: {vol:,.0f} t Pb"
+            f"{cat_display.get(cat, cat)}: {vol:,.0f} t Pb"
         )
 
         first_of_cat = cat not in legend_cats_shown
@@ -532,8 +571,8 @@ def build_flow_network(
             hovertemplate=hover + "<extra></extra>",
             showlegend=first_of_cat,
             legendgroup=cat,
-            name=_CAT_DISPLAY.get(cat, cat) if first_of_cat else "",
-            legendrank=list(_CAT_COLORS).index(cat) if cat in _CAT_COLORS else 99,
+            name=cat_display.get(cat, cat) if first_of_cat else "",
+            legendrank=list(cat_colors).index(cat) if cat in cat_colors else 99,
         ))
 
         # Arrowhead via annotation (data-coordinate ax/ay for accurate direction)
