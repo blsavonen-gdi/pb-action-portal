@@ -214,7 +214,21 @@ defaults.
   \item \textbf{Dataset.} BACI from CEPII (harmonized UN Comtrade). \emph{HS12
         (2012--2024)} uses HS 2017 codes with waste-battery code \hs{854810};
         \emph{HS22 (2022--2024)} uses HS 2022 codes with the reclassified
-        waste-battery code \hs{854911}. Easy mode is always HS12.
+        waste-battery code \hs{854911}.\footnote{\textbf{On using \texttt{854810}
+        as a proxy for \texttt{854911}.} HS12's \texttt{854810} is a broad ``all
+        spent batteries'' code, whereas HS22 introduced \texttt{854911}
+        specifically for spent lead-acid batteries (ULABs). The historical
+        (pre-2022) series therefore uses \texttt{854810} as a proxy for ULAB trade.
+        Validated against the 2022--2024 overlap years (where BACI reports both
+        nomenclatures), lead-acid makes up roughly 75--85\% of the spent-battery
+        block by weight (77--85\% by value), confirming the proxy in direction and
+        magnitude. However \texttt{854810} \emph{overstates} ULAB tonnage --- by
+        about 10--25\% near 2022 --- because it also captures fast-growing lithium
+        and other battery scrap; the proxy is cleaner (likely $>$90\%) the further
+        back you go. Applying a scaling factor of roughly 0.90--0.95 for earlier
+        years, tapering toward 0.80--0.85 near 2022, sharpens the historical series.
+        (The validation is partly circular, since BACI's 2022--2024 \texttt{854810}
+        is itself back-converted from HS22 reports.)} Easy mode is always HS12.
   \item \textbf{Mining \& refining source.} \emph{BGS} (1971--2023, total refined,
         no primary/secondary split) or \emph{USGS} (2015--2023, splits primary and
         secondary). When the selected source lacks a country/year, the app falls
