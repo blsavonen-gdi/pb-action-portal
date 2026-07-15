@@ -222,7 +222,7 @@ def build_sankey(
     eta_mfg: float = 0.98,
     eta_ore: float = 0.95,
     eta_refine: float = 0.97,
-    gamma: float = 0.70,
+    gamma: float = 0.95,
     advanced: bool = True,
     min_flow: float = 10.0,
     # Eurostat anchor parameters
@@ -945,10 +945,10 @@ def render_mass_balance_sankey_tab(
                 )
                 gamma = st.slider(
                     "Collection rate (γ) — overrides country default",
-                    min_value=0.30, max_value=1.00, value=0.90, step=0.01, format="%.2f",
+                    min_value=0.30, max_value=1.00, value=0.95, step=0.01, format="%.2f",
                     key="sankey_gamma",
                     help=(
-                        "Default is 0.90 (10% disposal). Adjust this for the specific "
+                        "Default is 0.95 (5% disposal). Adjust this for the specific "
                         "country you are modelling — e.g. ~0.99 for USA/Japan, ~0.70 "
                         "for India, ~0.60 for Nigeria."
                     ),
@@ -975,7 +975,7 @@ def render_mass_balance_sankey_tab(
             eta_mfg = 0.98
             eta_ore = 0.95
             eta_refine = 0.97
-            gamma = 0.90
+            gamma = 0.95
             battery_lead_content_fraction = 0.65
 
     # ------------------------------------------------------------------
@@ -1262,7 +1262,7 @@ def render_economy_snapshot_tab(
     Recycling Economy Snapshot tab — side-by-side radar comparison of countries
     (up to 3 in Advanced mode, 2 in Easy mode).
     """
-    st.markdown("### Recycling Economy Snapshot")
+    st.markdown("### Recycling Economy Snapshot (Beta 🧪)")
     st.warning(
         "This is based on BOTEC-type calculations and has not been reconciled against "
         "external data sources. It also does not account for informal vs. formal "

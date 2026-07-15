@@ -481,11 +481,11 @@ with _hdr_txt:
     )
 
 # ── Top navigation (one flat level of tabs) ───────────────────────────────
-_nav_options = ["Trade Map", "Trade Trends", "Trade Relationships", "Lead Accumulation", "Production & Capacity", "Recycling Economy Snapshot", "Material Flow (Beta)", "Literature Stats"]
+_nav_options = ["Trade Map", "Trade Trends", "Trade Relationships", "Lead Accumulation", "Production & Capacity", "Recycling Economy Snapshot (Beta 🧪)", "Material Flow (Beta 🧪)", "Literature Stats"]
 
 # The seven data tabs share the same sidebar controls + data prep; Literature
 # Stats is standalone.
-_DATA_TABS = ("Trade Map", "Trade Trends", "Trade Relationships", "Production & Capacity", "Lead Accumulation", "Recycling Economy Snapshot", "Material Flow (Beta)")
+_DATA_TABS = ("Trade Map", "Trade Trends", "Trade Relationships", "Production & Capacity", "Lead Accumulation", "Recycling Economy Snapshot (Beta 🧪)", "Material Flow (Beta 🧪)")
 
 # If a persisted selection is no longer valid, fall back to the first tab.
 if st.session_state.get("toolkit_page") not in _nav_options:
@@ -1802,7 +1802,7 @@ def _make_choropleth(
 
 
 
-if _page in ("Production & Capacity", "Lead Accumulation", "Recycling Economy Snapshot", "Material Flow (Beta)"):
+if _page in ("Production & Capacity", "Lead Accumulation", "Recycling Economy Snapshot (Beta 🧪)", "Material Flow (Beta 🧪)"):
 
     # ── Production & Capacity ─────────────────────────────────────────────────
 
@@ -1899,7 +1899,7 @@ if _page in ("Production & Capacity", "Lead Accumulation", "Recycling Economy Sn
         _map_beta          = 0.85
         _map_eta_mfg       = 0.98
         _map_eta_ore       = 0.95
-        _map_gamma         = 0.70
+        _map_gamma         = 0.95
 
         if prod_dataset in _ESTIMATED_DATASETS:
             if ADVANCED:
@@ -1925,7 +1925,7 @@ if _page in ("Production & Capacity", "Lead Accumulation", "Recycling Economy Sn
                         )
                         _map_gamma = st.slider(
                             "Collection rate (γ)",
-                            0.30, 1.00, 0.70, 0.01, format="%.2f", key="map_gamma",
+                            0.30, 1.00, 0.95, 0.01, format="%.2f", key="map_gamma",
                             help="Global default. Country-specific rates are not applied here.",
                         )
                     with _mp_c2:
@@ -2263,7 +2263,7 @@ if _page in ("Production & Capacity", "Lead Accumulation", "Recycling Economy Sn
 
     # ── Process Estimates ─────────────────────────────────────────────────────
 
-    if _page == "Material Flow (Beta)":
+    if _page == "Material Flow (Beta 🧪)":
         st.warning(
             "This is only based on BOTEC-type calculations, and has not been reconciled "
             "against external data sources. These numbers also do not account for "
@@ -2318,7 +2318,7 @@ if _page in ("Production & Capacity", "Lead Accumulation", "Recycling Economy Sn
 
     # ── Economy Snapshot ──────────────────────────────────────────────────────
 
-    if _page == "Recycling Economy Snapshot":
+    if _page == "Recycling Economy Snapshot (Beta 🧪)":
         from visualizations.mass_balance_sankey import render_economy_snapshot_tab
         _mining_refining_df2 = _load_mining_refining()
         render_economy_snapshot_tab(

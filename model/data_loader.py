@@ -35,6 +35,12 @@ CATEGORY_MAP: dict[int, str] = {
 
 # Pb conversion factors applied to raw Quantity → actual_lead (tonnes Pb).
 # Used when loading HS22 data, which has no pre-computed Pb Quantity column.
+# The keys of this dict also define which HS codes are KEPT when loading HS22
+# (see load_baci); every code the app can display must appear here. The Slag
+# (262021/262029) and Other Lead Products (780411/780419/780420/780600) codes
+# are populated in the HS22 file and are retained here so they survive the load
+# (they are still excluded by default in the UI). Their factors match the
+# HS_META defaults used by the material-flow tabs.
 HS_LEAD_FACTORS: dict[int, float] = {
     260700: 0.60,
     780110: 1.00,
@@ -48,6 +54,14 @@ HS_LEAD_FACTORS: dict[int, float] = {
     854911: 0.70,
     282410: 0.91,
     282490: 0.75,
+    # Slag (default-off in the UI)
+    262021: 0.40,
+    262029: 0.55,
+    # Other Lead Products (default-off in the UI)
+    780411: 0.99,
+    780419: 0.99,
+    780420: 0.985,
+    780600: 0.97,
 }
 
 # Countries for which Eurostat lead-acid battery collection data exists
@@ -90,8 +104,11 @@ def load_baci(dataset: str = "hs12") -> pd.DataFrame:
     if dataset == "hs22":
         df = pd.read_csv(DATA_DIR / "BACI_HS22_lead_trade_2022_2024.csv")
         df = df.loc[:, ~df.columns.str.startswith("Unnamed")]
-        # Keep only the model-relevant codes (mirrors HS12 scope)
-        model_codes = set(CATEGORY_MAP.keys())
+        # Keep every code the app knows how to convert (the HS_LEAD_FACTORS keys).
+        # This includes Slag and Other Lead Products, which are present in the
+        # HS22 file; codes outside this set (e.g. non-lead 293110/381111) are
+        # dropped.
+        model_codes = set(HS_LEAD_FACTORS.keys())
         df = df[df["Product"].isin(model_codes)].copy()
         df["actual_lead"] = df["Product"].map(HS_LEAD_FACTORS).fillna(0.70) * df["Quantity"]
     else:

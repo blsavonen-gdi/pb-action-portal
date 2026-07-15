@@ -1,0 +1,559 @@
+% =====================================================================
+%  Pb Action Portal -- Methodology & User Guide
+%  The public, no-password Streamlit dashboard
+%  Partnership for Battery Action (Pb Action / Global Development Incubator)
+%
+%  Compile with pdflatex (run twice for the table of contents / links):
+%      pdflatex Portal_README.tex
+%      pdflatex Portal_README.tex
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage[hidelinks,colorlinks=true,linkcolor=pbblue,urlcolor=pbblue,citecolor=pbblue]{hyperref}
+
+% ---- Palette -------------------------------------------------------------
+\definecolor{pbblue}{HTML}{1E88E5}
+\definecolor{pbgrey}{HTML}{5F6368}
+\definecolor{pblight}{HTML}{F1F3F4}
+\definecolor{pbgreen}{HTML}{43A047}
+\definecolor{pborange}{HTML}{FB8C00}
+\definecolor{pbrule}{HTML}{D0D3D6}
+
+% ---- Section styling -----------------------------------------------------
+\titleformat{\section}{\color{pbblue}\Large\bfseries}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\color{pbgrey}\large\bfseries}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+
+% ---- Header / footer -----------------------------------------------------
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+\lhead{\small\color{pbgrey}Pb Action Portal}
+\rhead{\small\color{pbgrey}Methodology \& User Guide}
+\cfoot{\small\color{pbgrey}\thepage}
+
+% ---- Table helpers -------------------------------------------------------
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\renewcommand{\arraystretch}{1.25}
+
+% ---- Code / value styling ------------------------------------------------
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  columns=fullflexible,
+  backgroundcolor=\color{pblight},
+  frame=single,
+  rulecolor=\color{pbrule},
+  xleftmargin=0.5em,
+  aboveskip=0.8em,belowskip=0.8em,
+}
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\hs}[1]{\texttt{#1}}
+
+% ---- Callout box ---------------------------------------------------------
+\newcommand{\callout}[2]{%
+  \vspace{0.4em}\noindent
+  \fcolorbox{pbrule}{pblight}{%
+    \begin{minipage}{0.97\linewidth}
+    \small\textbf{\color{pborange}#1}\\[0.2em]#2
+    \end{minipage}}\vspace{0.4em}}
+
+% =====================================================================
+\begin{document}
+
+\begin{titlepage}
+\centering
+\vspace*{2cm}
+{\color{pbblue}\Huge\bfseries Pb Action Portal\par}
+\vspace{0.4cm}
+{\Large The public lead-analysis dashboard\par}
+\vspace{0.3cm}
+{\large\color{pbgrey} Methodology \& User Guide\par}
+\vspace{1.5cm}
+{\large Partnership for Battery Action (Pb Action)\par}
+{\normalsize Global Development Incubator (GDI)\par}
+\vspace{2cm}
+\begin{minipage}{0.8\textwidth}
+\centering\small\color{pbgrey}
+A public, interactive dashboard for exploring how lead moves through the global
+economy --- international trade, mining and refining, battery manufacturing, and
+end-of-life recycling. This document explains every tab, the calculations and
+assumptions behind each view, and how to use and adjust the model's inputs. All
+quantities are expressed in \textbf{metric tonnes of lead content} unless
+otherwise stated.
+\end{minipage}
+\vfill
+{\small\color{pbgrey} Document generated for the Pb Action team \textbullet\ contact
+\href{mailto:ben.savonen@globaldevincubator.org}{ben.savonen@globaldevincubator.org}\par}
+\end{titlepage}
+
+\tableofcontents
+\clearpage
+
+% =====================================================================
+\section{Overview}
+% =====================================================================
+
+The \textbf{Pb Action Portal} is the public Streamlit dashboard for the
+Partnership for Battery Action. It brings together several third-party datasets ---
+harmonized international trade statistics, mine and refinery production figures,
+battery-collection data, and figures drawn from the published literature --- and
+layers a set of interactive analyses on top of them, from bilateral trade maps to
+a country-level material-flow model. It is built for high-level analysis and
+pattern detection; every figure is expressed in tonnes of lead content so that
+trade, production, and recycling flows can be compared on a common basis.
+
+\subsection{No password; one-time disclaimer}
+
+There is no login or password gate --- the app is public. The only interstitial is
+a one-time data-quality disclaimer with an ``I understand --- enter the app''
+button.
+
+\callout{Data-quality disclaimer}{The Portal draws on large, multi-source
+datasets --- BACI trade statistics, BGS/USGS production figures, and model-derived
+estimates --- each with known gaps and reporting errors. Results are useful for
+high-level analysis, rough estimates, and pattern detection, but should be
+cross-checked against primary sources before drawing conclusions.}
+
+\subsection{Flat tab structure}
+
+The Portal presents \textbf{one flat level} of eight tabs:
+
+\begin{longtable}{L{4.4cm} L{9.8cm}}
+\toprule
+\textbf{Tab} & \textbf{What it shows} \\
+\midrule
+\endhead
+Trade Map            & Bilateral BACI lead-trade flows on a world map \\
+Trade Trends         & Time series of imports/exports/production by country \\
+Trade Relationships  & Flow-network graph of who trades with whom \\
+Lead Accumulation    & Net lead balance (mining $+$ imports $-$ exports) over time \\
+Production \& Capacity& Where lead is mined, refined, and where batteries are made \\
+Recycling Economy Snapshot (Beta) & Country recycling-economy overview (radar) \\
+Material Flow (Beta) & Experimental per-country material-flow Sankey \\
+Literature Stats     & Searchable library of sourced datapoints \\
+\bottomrule
+\end{longtable}
+
+\subsection{Units \& interpretation}
+
+All values are in \textbf{metric tonnes of lead (Pb) content}; the Lead
+Accumulation and model tabs display in kilotonnes (kt Pb). Model-derived numbers
+are rounded to two significant figures for display.
+
+\subsection{Data sources}
+
+\begin{longtable}{L{5.5cm} L{8.5cm}}
+\toprule
+\textbf{Data} & \textbf{Source} \\
+\midrule
+\endhead
+Bilateral trade flows & BACI / CEPII (harmonized UN Comtrade) \\
+Mine \& refined production & USGS, BGS \\
+Battery collection & Eurostat, BCI, ILZSG, national studies \\
+Literature figures & Published studies (per-figure citations on the Literature
+Stats tab) \\
+\bottomrule
+\end{longtable}
+
+\subsection{Running \& deploying}
+
+\begin{lstlisting}
+pip install -r requirements.txt
+streamlit run streamlit_app.py
+\end{lstlisting}
+
+No password is required. Dependencies are \code{streamlit}, \code{pandas},
+\code{numpy}, \code{plotly}, and \code{pyvis} (for the interactive Flow Network).
+All data the app needs ships in the repository, so no external downloads are
+required. The Portal is deployed on Streamlit Community Cloud from the GitHub
+repository \code{pb-action-portal}; it auto-redeploys on push to \code{main}.
+
+% =====================================================================
+\section{View mode: Easy vs.\ Advanced}
+% =====================================================================
+
+A \textbf{View mode} radio in the sidebar trades usability for control. It applies
+to all data tabs (tabs 1--7).
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Easy mode} (default) fixes sensible assumptions and exposes only a
+        \emph{Center year} slider. The fixed assumptions --- HS12 dataset, BGS
+        source, 3-year centered average, default Pb factors with Slag and Other
+        Lead Products excluded --- are restated in grey at the bottom of each tab.
+  \item \textbf{Advanced mode} exposes every input: dataset (HS12/HS22), mining
+        source (BGS/USGS), single-year vs.\ 3-year period, per-HS Pb-content
+        factors, and extra per-tab controls (colour modes, layouts, animation,
+        process-parameter sliders).
+\end{itemize}
+
+The Easy-mode factor set is constructed to exactly match Advanced mode at its
+default widget states, so the two modes agree when Advanced is left at its
+defaults.
+
+\subsection{Datasets, sources, and time period}
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Dataset.} BACI from CEPII (harmonized UN Comtrade). \emph{HS12
+        (2012--2024)} uses HS 2017 codes with waste-battery code \hs{854810};
+        \emph{HS22 (2022--2024)} uses HS 2022 codes with the reclassified
+        waste-battery code \hs{854911}. Easy mode is always HS12.
+  \item \textbf{Mining \& refining source.} \emph{BGS} (1971--2023, total refined,
+        no primary/secondary split) or \emph{USGS} (2015--2023, splits primary and
+        secondary). When the selected source lacks a country/year, the app falls
+        back to the other and shows a note.
+  \item \textbf{Time period.} \emph{Single year}, or a \emph{3-year average}
+        (recommended) over $[\,y-1,y,y+1\,]$ clipped to the data range; the
+        average is annualised by summing flows and dividing by the number of years.
+\end{itemize}
+
+\subsection{Pb-content factors}\label{sec:pbfactors}
+
+BACI reports gross product quantities; each HS code is multiplied by a Pb-content
+fraction. In Advanced mode every factor is an adjustable slider (bounded lo--hi)
+with a checkbox to exclude the code (factor $0.0$). The canonical table:
+
+\begin{longtable}{l L{4.6cm} L{2.9cm} c c c}
+\toprule
+\textbf{HS code} & \textbf{Product} & \textbf{Category} & \textbf{Default} &
+\textbf{Lo} & \textbf{Hi} \\
+\midrule
+\endhead
+\hs{260700} & Lead Ore \& Concentrates      & Mining Outputs      & 0.600 & 0.45 & 0.75 \\
+\hs{262021} & Leaded Gasoline Residues       & Slag                & 0.400 & 0.20 & 0.60 \\
+\hs{262029} & Other Lead-Containing Residues & Slag                & 0.550 & 0.30 & 0.80 \\
+\hs{282410} & Lead Monoxide                  & Battery Inputs      & 0.930 & 0.93 & 0.93 \\
+\hs{282490} & Other Lead Oxides              & Battery Inputs      & 0.900 & 0.87 & 0.93 \\
+\hs{780110} & Refined Unwrought Lead         & Battery Inputs      & 0.990 & 0.99 & 0.99 \\
+\hs{780191} & Unwrought Lead (w/ Antimony)   & Battery Inputs      & 0.960 & 0.94 & 0.98 \\
+\hs{780199} & Other Unwrought Lead           & Battery Inputs      & 0.970 & 0.95 & 0.99 \\
+\hs{780200} & Lead Waste \& Scrap            & Battery Waste       & 0.725 & 0.50 & 0.95 \\
+\hs{780411} & Lead Sheet/Strip/Foil (PCB)    & Other Lead Products & 0.990 & 0.99 & 0.99 \\
+\hs{780419} & Lead Sheet/Strip/Foil (Other)  & Other Lead Products & 0.990 & 0.99 & 0.99 \\
+\hs{780420} & Lead Tubes, Pipes \& Fittings  & Other Lead Products & 0.985 & 0.98 & 0.99 \\
+\hs{780600} & Other Lead Articles            & Other Lead Products & 0.970 & 0.95 & 0.99 \\
+\hs{850710} & Lead-Acid Starter Batteries    & New Batteries       & 0.600 & 0.55 & 0.65 \\
+\hs{850720} & Other Lead-Acid Batteries      & New Batteries       & 0.600 & 0.55 & 0.65 \\
+\hs{850790} & Battery Parts                  & Battery Inputs      & 0.625 & 0.30 & 0.95 \\
+\hs{854810} & Used Lead-Acid Batteries (HS12)& Battery Waste       & 0.600 & 0.55 & 0.65 \\
+\hs{854911} & Spent Lead-Acid Battery Waste (HS22) & Battery Waste & 0.600 & 0.55 & 0.65 \\
+\bottomrule
+\end{longtable}
+
+\noindent\textbf{Default-off codes.} Slag (\hs{262021}, \hs{262029}) and Other
+Lead Products (\hs{780411}, \hs{780419}, \hs{780420}, \hs{780600}) are excluded by
+default; re-enable them in Advanced mode.
+
+\callout{Where the sliders bite}{The trade tabs read a pre-computed
+\code{actual\_lead} column (HS12's baked-in \code{Pb Quantity}, or a fixed
+load-time factor $\times$ \code{Quantity} for HS22). The model tabs (Lead
+Accumulation, Production BOTEC, Recycling Snapshot, Material Flow) re-derive lead
+as \code{pb\_factors[code]} $\times$ \code{Quantity}, so the adjustable factors
+visibly change those views.}
+
+\subsection{Regions}
+
+Places can be individual countries or regions. Region selectors list major
+regions (Africa, Americas, Asia, Europe, Oceania) first, then UN sub-regions, then
+countries A--Z. Regional trade views show cross-region (external) flows only.
+
+% =====================================================================
+\section{Trade tabs}
+% =====================================================================
+
+\subsection{Trade Map}
+
+\textbf{What it shows.} A Plotly choropleth of BACI lead-trade for the selected
+place, plus Top-30 partner tables. \emph{All countries} colours each country by
+net position ($\text{exports}-\text{imports}$, signed-log normalised, red = net
+importer, green = net exporter); a single country colours its partners; a region
+colours its external partners (cross-region flows only).
+
+\textbf{Calculations.} The single-country ``global volume scale'' multiplies a
+balance ratio ($\text{net}/\text{total bilateral}$) by a log-intensity term so
+small flows stay pale; the ``bilateral trade balance'' mode plots the ratio alone
+(volume-independent), purple = pure receiver, orange = pure sender.
+
+\textbf{Controls.} \emph{Select a country or region} (default All countries);
+\emph{Color scale mode} (Advanced, non-All: Global volume scale / Bilateral trade
+balance); \emph{Product selection} --- Easy shows the five trade-category
+checkboxes, Advanced per-HS checkboxes grouped by six material-flow categories
+(Slag and Other Lead Products off by default).
+
+\subsection{Trade Trends}
+
+\textbf{What it shows.} Line charts of import/export volume (or production) over
+time, for one place (Easy) or up to three (Advanced).
+
+\textbf{Calculations.} Trade series sum \code{actual\_lead} by year for the chosen
+category's HS codes (raw annual values --- not subject to the 3-year window).
+Production series come from BGS or USGS with automatic source fallback. The
+Relative view plots year-on-year \% change.
+
+\textbf{Controls.} \emph{Country / Region} slots; \emph{Series} multiselect
+(default Total Lead-Related Imports \& Exports); \emph{View} absolute/relative
+(Advanced); \emph{Shared y-axis} toggle (Advanced).
+
+\subsection{Trade Relationships (Flow Network)}
+
+\textbf{What it shows.} A node-link graph: bubble size
+$\propto\sqrt{\text{total trade volume}}$, arrow width
+$\propto\sqrt{\text{flow volume}}$, arrows coloured by category. An interactive
+draggable view (default) or a static Plotly figure.
+
+\textbf{Controls.} \emph{View mode} (Advanced); \emph{Select countries} (default
+India, China, USA); \emph{Minimum flow} (Advanced 100--10000, default 500; Easy
+fixed 100); \emph{Layout} (default geographic centroids; Advanced adds Grid and
+Force-directed); \emph{Focal country}; \emph{Region cluster}, \emph{Flow
+direction}, \emph{Use all years}, and \emph{Hide country pairs} (all Advanced);
+product selection as on the Trade Map.
+
+% =====================================================================
+\section{Model \& material-flow tabs}
+% =====================================================================
+
+\subsection{Lead Accumulation}
+
+\textbf{What it shows.} A cumulative net-lead line chart since the 2012 base year,
+a per-category net bar for the selected year, and a diverging world map of every
+country's net balance (Advanced adds an annual bar, metric tiles, and an HS-code
+table).
+
+\textbf{Calculation.}
+\[
+\text{Net} \;=\; \text{Mining} \;+\; \text{Imports}_{\text{Pb}}
+\;-\; \text{Exports}_{\text{Pb}},
+\]
+where mining is mine production plus net ore trade (\hs{260700}), and trade is
+converted with the adjustable Pb factors (unknown codes default $0.70$). Positive
+= net accumulator, negative = net depleter. The world map uses a diverging
+red--green scale centred at zero, clipped at the 95th percentile of magnitude.
+
+\textbf{Controls.} \emph{Select country or region} (default Ghana); inherits the
+sidebar year, dataset, Pb factors, and mining source.
+
+\callout{A trade-based approximation}{Net balance does not account for domestic
+consumption, stockpiles, or informal flows; 2024 data is incomplete.}
+
+\subsection{Production \& Capacity}
+
+\textbf{What it shows.} A log-scale choropleth of one of four datasets, with a
+ranked table for reported datasets and (Advanced) an animated time-lapse.
+
+\begin{longtable}{L{5.4cm} L{2.0cm} L{6.1cm}}
+\toprule
+\textbf{Dataset} & \textbf{Type} & \textbf{Source / metric} \\
+\midrule
+\endhead
+Lead Mining                    & reported & BGS or USGS mine production \\
+Lead Refining                  & reported & BGS total refined, or USGS primary $+$
+secondary \\
+Battery Manufacturing (BOTEC)  & model    & \code{F4\_batt\_lead} (see engine) \\
+Battery Consumption (BOTEC)    & model    & \code{F5\_implied} (see engine) \\
+\bottomrule
+\end{longtable}
+
+\textbf{Calculations.} Reported datasets are pulled from an outer-join of separate
+USGS and BGS extracts (never reconciled). The two BOTEC datasets run the
+material-flow engine (Section~\ref{sec:engine}) once per eligible country.
+
+\textbf{Controls.} \emph{Dataset} radio; \emph{Animated} toggle (Advanced);
+\emph{Year} slider (Advanced); a page-local BGS/USGS radio in Easy mode; a
+\emph{Process parameters} expander for the BOTEC datasets in Advanced.
+
+\subsection{Recycling Economy Snapshot (Beta)}
+
+\textbf{What it shows.} Side-by-side radar (``diamond'') charts comparing
+countries (up to three in Advanced, two in Easy) on four recycling axes ---
+Collection, Breaking, Secondary Smelting, Manufacturing (optionally plus Mining).
+A perfectly circular economy plots as an equilateral diamond.
+
+\textbf{Calculation.} Axis values are material-flow engine outputs
+(\code{B4\_collected}, \code{B2\_break\_out}, \code{eff\_secondary},
+\code{F4\_batt\_lead}, \code{mined}) computed with \emph{default} process
+parameters --- the Advanced sliders do not apply here. An optional Collection
+Baseline marks the ``perfect loop'' reference.
+
+\textbf{Controls.} Country selectboxes (defaults Germany, USA); Advanced toggles
+for Mining axis, Collection Baseline, and Same scale. In Easy mode the baseline is
+always on.
+
+\subsection{Material Flow (Beta)}
+
+\textbf{What it shows.} A per-country material-flow Sankey (collection $\to$
+breaking $\to$ secondary smelting $\to$ manufacturing $\to$ installation), with
+per-commodity trade nodes and (Advanced) a model-output table.
+
+\textbf{Controls.} \emph{Select country} (restricted to countries with refining
+data); \emph{Min flow threshold} (Advanced, default 10 t Pb; Easy fixed 10); the
+full \emph{Process parameters} expander in Advanced. Advanced draws gross
+import/export nodes; Easy nets each commodity unless both directions exceed the
+threshold.
+
+\subsection{The material-flow engine}\label{sec:engine}
+
+Four of the tabs are powered by one underlying model: the \textbf{Material Flow}
+Sankey, the \textbf{Recycling Economy Snapshot}, and the two BOTEC datasets on
+\textbf{Production \& Capacity} (Battery Manufacturing and Battery Consumption).
+Understanding this engine explains most of what those tabs show.
+
+\paragraph{What it is --- in plain terms.} For a single country and year, the model
+reconstructs the whole lead cycle --- from batteries being collected at the end of
+their life, through recycling, all the way to new batteries being made and put into
+service. It works by starting from one quantity we can actually measure (how much
+lead that country's smelters produced from scrap) and reasoning outward in both
+directions: trade data accounts for what crosses borders, and a short list of
+efficiency assumptions accounts for the losses at each step. It is a single,
+transparent pass of arithmetic --- not a statistical fit --- so every output can be
+traced straight back to its inputs.
+
+\paragraph{The anchor.} The one firmly-measured quantity is a country's
+\textbf{secondary (scrap-based) smelting output}, reported by BGS or USGS.
+Everything else is estimated relative to it. Anchoring on a real, reported number
+keeps the whole chain tied to observed production rather than to a tower of
+assumptions. (A country that reports no refining at all cannot be anchored and is
+skipped.)
+
+Two pieces of notation below: for each traded product, ``imports'' and ``exports''
+are that country's trade in it (in tonnes of lead content), and the Greek letters
+are the efficiency/share parameters listed in the table further down.
+
+\paragraph{Working backward --- from the smelter up to collection.} Moving
+\emph{up} the recycling chain, each step asks: how much had to enter this stage for
+the next stage's figure to come out? That means dividing by an efficiency (to undo
+the losses) and adjusting for net trade of the material at that stage.
+\begin{align*}
+\text{anchor} &= \text{reported secondary smelting output} \\
+B_1\ (\text{scrap into smelters}) &= \text{anchor} / \eta_{\text{secondary}} \\
+B_2\ (\text{lead recovered by breaking}) &= \max(0,\; B_1 - \text{imports}_{\text{scrap}} + \text{exports}_{\text{scrap}}) \\
+B_3\ (\text{used batteries broken}) &= B_2 / (\delta \cdot \eta_{\text{break}}) \\
+B_4\ (\text{used batteries collected}) &= \max(0,\; B_3 - \text{imports}_{\text{used}} + \text{exports}_{\text{used}}) \\
+B_5\ (\text{end-of-life batteries generated}) &= B_4 / \gamma \\
+B_6\ (\text{uncollected / disposed}) &= B_5 \cdot (1-\gamma)
+\end{align*}
+In words: the scrap the smelters consumed ($B_1$) must have come from domestic
+battery-breaking plus net imported scrap ($B_2$); that recovered lead implies a
+larger quantity of used batteries fed in, before breaking and end-of-life losses
+($B_3$); those came from batteries collected at home plus net trade in used
+batteries ($B_4$); and the collected amount is only a fraction $\gamma$ (the
+collection rate) of all the batteries that actually reached end of life ($B_5$),
+the remainder being lost or dumped ($B_6$).
+
+\paragraph{Working forward --- from feedstock down to new batteries.} From the
+total refined metal available, the model moves \emph{down} the manufacturing chain:
+\begin{align*}
+\text{feedstock} &= \text{primary metal} + \text{secondary metal} + \text{net refined \& crude imports} \\
+F_2\ (\text{lead into non-battery uses}) &= \text{feedstock} \cdot (1-\beta) \\
+F_3\ (\text{lead routed to batteries}) &= \text{feedstock} \cdot \beta \\
+F_4\ (\text{lead in batteries made}) &= \max(0,\;F_3)\cdot\eta_{\text{mfg}} \\
+F_5\ (\text{implied battery consumption}) &= F_4 + \text{imports}_{\text{batt}} - \text{exports}_{\text{batt}}
+\end{align*}
+In words: the metal a country has to work with (feedstock) is its own refined
+output plus net imports of refined feedstock and crude lead (crude is first
+de-rated by a refining recovery $\eta_{\text{refine}}$); a share $\beta$ of that
+goes into batteries and the rest into other lead products ($F_2$/$F_3$);
+manufacturing losses reduce it to the lead actually embodied in new batteries
+($F_4$); and adding net battery trade gives the lead in batteries \emph{put into
+service} domestically ($F_5$).
+
+\paragraph{Where the primary/secondary split comes from.} The anchor has to be
+divided between metal made from ore (primary) and metal made from scrap
+(secondary). Estimated primary metal is domestic ore
+($\text{mined}+\text{imports}_{\text{ore}}-\text{exports}_{\text{ore}}$) times a
+smelting recovery $\eta_{\text{ore}}$; if that comes to less than 5\% of reported
+refined output, the model treats \emph{all} refined lead as secondary. When USGS
+data is selected, its reported primary/secondary split is used directly instead.
+
+\callout{Key assumptions --- read before trusting a number}{The engine is a
+back-of-the-envelope (BOTEC) estimate, deliberately simple. In particular it
+assumes: (1)~\textbf{steady state} --- a single trade year is treated as if the
+system were in balance, with no time lag between batteries sold and batteries
+returned; (2)~\textbf{one aggregate flow} --- there is no split between formal and
+informal recycling, which in reality can change the efficiencies at every step;
+(3)~\textbf{global default efficiencies} --- the recovery and collection rates are
+literature midpoints applied to every country until you change them;
+(4)~\textbf{trade as a clean proxy} --- traded scrap, used batteries, and feedstock
+are assumed to be correctly classified and measured, so any gaps or
+misclassifications in the underlying trade data flow straight through; and
+(5)~\textbf{no reconciliation} --- it is a single deterministic pass, not a model
+solved for overall consistency against independent stock data. Outputs are rounded
+to two significant figures and labelled Beta in-app.}
+
+\paragraph{Adjustable parameters (Advanced mode).} Each stage's efficiency or share
+is a slider. The defaults are neutral starting points, \emph{not} country-specific
+values.
+
+\begin{longtable}{L{6.4cm} c c c}
+\toprule
+\textbf{Parameter} & \textbf{Symbol} & \textbf{Range} & \textbf{Default} \\
+\midrule
+\endhead
+Secondary smelting recovery & $\eta_{\text{secondary}}$ & 0.80--1.00 & 0.97 \\
+Breaking recovery           & $\eta_{\text{break}}$     & 0.70--1.00 & 0.95 \\
+Pb retained at end-of-life  & $\delta$                  & 0.80--1.00 & 0.95 \\
+Battery share of lead demand& $\beta$                   & 0.50--1.00 & 0.85 \\
+Manufacturing efficiency    & $\eta_{\text{mfg}}$       & 0.90--1.00 & 0.98 \\
+Primary smelting recovery   & $\eta_{\text{ore}}$       & 0.80--1.00 & 0.95 \\
+Refining recovery (crude lead) & $\eta_{\text{refine}}$ & 0.80--1.00 & 0.97 \\
+Collection rate             & $\gamma$                  & 0.30--1.00 & 0.95 \\
+\bottomrule
+\end{longtable}
+
+\callout{Start from the defaults, then tune for each country}{Every parameter ships
+with a single \emph{global} default (for example, the collection rate
+$\gamma=0.95$), applied identically to every country. Real-world values differ
+enormously: collection rates alone range from roughly 0.99 in the USA and Japan, to
+about 0.70 in India, to around 0.60 in Nigeria --- and the battery share of lead
+demand, breaking and smelting recoveries, and end-of-life retention vary just as
+much. The out-of-the-box numbers are therefore \emph{illustrative}, not a
+country-specific answer. For any serious analysis, switch to Advanced mode, open
+\emph{Process parameters}, and set at least the collection rate ($\gamma$), the
+battery share ($\beta$), and the recovery efficiencies to values appropriate for
+the country and year you are studying. The Sankey and snapshot update immediately,
+so you can see how sensitive the picture is to each assumption.}
+
+% =====================================================================
+\section{Literature Stats}
+% =====================================================================
+
+\textbf{What it shows.} A searchable, read-only library of quantitative datapoints
+from the lead-battery literature, each tied to a source citation (reading
+\code{data/literature\_datapoints.csv}). Internal model-variable codes are hidden
+and mapped to plain-English topics (Collection \& ULAB volumes, Recycling
+efficiency, Battery composition, Lead demand, Trade flows, Health \&
+environmental exposure, and so on).
+
+\textbf{Controls.} A \emph{Search} box; \emph{Topic}, \emph{Geography}, and
+\emph{Evidence type} multiselects; a \emph{Year} slider with an ``Include undated /
+multi-year'' toggle. Results appear in a sortable, single-select table; clicking a
+row opens a detail panel with the verbatim quote and APA citation. A CSV download
+exports friendly columns. The only aggregation shown is the count of matching
+statistics.
+
+\callout{Submission form is built but disabled}{The Portal contains a full
+visitor-submission form (\code{literature/submit.py}) that would write new
+datapoints to a Google Sheet for review, with an offline CSV/mailto fallback. It
+is currently \emph{disabled}: the \code{render\_submission\_form()} call and its
+import are commented out in \code{literature/app.py}, and \code{gspread} /
+\code{google-auth} are commented out in \code{requirements.txt}. To re-enable it:
+uncomment those lines, restore the two dependencies, and configure the secrets
+(see \code{.streamlit/secrets.toml.example}).}
+
+\end{document}
