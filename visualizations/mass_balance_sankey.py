@@ -1360,9 +1360,12 @@ def render_economy_snapshot_tab(
     """
     st.markdown("### Recycling Economy Snapshot (Beta 🧪)")
     st.warning(
-        "This is based on BOTEC-type calculations and has not been reconciled against "
-        "external data sources. It also does not account for informal vs. formal "
-        "dynamics, which can greatly affect the values at each step.",
+        "This is a BOTEC-type estimate built **only from official reported data** and has "
+        "not been reconciled against external sources. It does not account for informal "
+        "smelting, illicit trade, or irregularly large losses or stockpiling — any of which "
+        "can shift the real figures. **Smaller economies are less likely to be accurate:** "
+        "with low trade and production volumes, small reporting gaps or a single "
+        "mis-recorded flow can distort the picture substantially.",
         icon="⚠️",
     )
     st.markdown(

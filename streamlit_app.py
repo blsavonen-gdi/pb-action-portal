@@ -484,13 +484,11 @@ with _hdr_txt:
     )
 
 # ── Top navigation (one flat level of tabs) ───────────────────────────────
-# "Recycling Economy Snapshot (Beta 🧪)" temporarily removed from nav — needs more work.
-_nav_options = ["Trade Map", "Trade Trends", "Trade Relationships", "Lead Accumulation", "Production & Capacity", "Material Flow (Beta 🧪)", "Literature Stats"]
+_nav_options = ["Trade Map", "Trade Trends", "Trade Relationships", "Lead Accumulation", "Production & Capacity", "Recycling Economy Snapshot (Beta 🧪)", "Material Flow (Beta 🧪)", "Literature Stats"]
 
 # The seven data tabs share the same sidebar controls + data prep; Literature
 # Stats is standalone.
-# "Recycling Economy Snapshot (Beta 🧪)" temporarily removed — needs more work.
-_DATA_TABS = ("Trade Map", "Trade Trends", "Trade Relationships", "Production & Capacity", "Lead Accumulation", "Material Flow (Beta 🧪)")
+_DATA_TABS = ("Trade Map", "Trade Trends", "Trade Relationships", "Production & Capacity", "Lead Accumulation", "Recycling Economy Snapshot (Beta 🧪)", "Material Flow (Beta 🧪)")
 
 # If a persisted selection is no longer valid, fall back to the first tab.
 if st.session_state.get("toolkit_page") not in _nav_options:
@@ -1366,24 +1364,21 @@ if _page in ("Trade Map", "Trade Trends", "Trade Relationships"):
         # network diagram sits directly under the intro. ────────────────────
         _fn_graph_slot = st.container()
 
-        # ── View mode: interactive (draggable) is the default in both modes;
-        # Advanced can switch back to the static Plotly view.
-        if ADVANCED:
-            fn_view_mode = st.radio(
-                "View mode",
-                options=["Interactive (draggable)", "Static (Plotly)"],
-                index=0,
-                horizontal=True,
-                key="fn_view_mode",
-                help=(
-                    "**Interactive**: pyvis / vis.js graph where you can grab and drag "
-                    "individual nodes. Zoom with the scroll wheel.\n\n"
-                    "**Static**: Plotly figure with a chosen layout preset (circle, grid, "
-                    "force-directed, or geographic)."
-                ),
-            )
-        else:
-            fn_view_mode = "Interactive (draggable)"
+        # ── View mode: static Plotly is the default in both modes; users can
+        # switch to the interactive (draggable) view whenever they want.
+        fn_view_mode = st.radio(
+            "View mode",
+            options=["Static (Plotly)", "Interactive (draggable)"],
+            index=0,
+            horizontal=True,
+            key="fn_view_mode",
+            help=(
+                "**Static**: Plotly figure with a chosen layout preset (circle, grid, "
+                "force-directed, or geographic).\n\n"
+                "**Interactive**: pyvis / vis.js graph where you can grab and drag "
+                "individual nodes. Zoom with the scroll wheel."
+            ),
+        )
 
         # ── Countries (+ minimum flow in Advanced) ────────────────────────────
         _fn_defaults = [c for c in ["India", "China", "USA"] if c in all_baci_countries]
@@ -1807,8 +1802,7 @@ def _make_choropleth(
 
 
 
-# "Recycling Economy Snapshot (Beta 🧪)" temporarily removed — needs more work.
-if _page in ("Production & Capacity", "Lead Accumulation", "Material Flow (Beta 🧪)"):
+if _page in ("Production & Capacity", "Lead Accumulation", "Recycling Economy Snapshot (Beta 🧪)", "Material Flow (Beta 🧪)"):
 
     # ── Production & Capacity ─────────────────────────────────────────────────
 
@@ -2271,10 +2265,11 @@ if _page in ("Production & Capacity", "Lead Accumulation", "Material Flow (Beta 
 
     if _page == "Material Flow (Beta 🧪)":
         st.warning(
-            "This is only based on BOTEC-type calculations, and has not been reconciled "
-            "against external data sources. These numbers also do not account for "
-            "informal vs. formal dynamics, which can greatly affect the efficiency values "
-            "at every step.",
+            "This is a BOTEC-type estimate built **only from official reported data** "
+            "(trade + production statistics). It has not been reconciled against external "
+            "sources, and it does not account for informal smelting, illicit trade, or "
+            "irregularly large losses or stockpiling — any of which can significantly shift "
+            "the real figures.",
             icon="⚠️",
         )
         _pe_desc_col, _pe_lm_col = st.columns([8, 1])
@@ -2326,25 +2321,22 @@ if _page in ("Production & Capacity", "Lead Accumulation", "Material Flow (Beta 
 
 
     # ── Economy Snapshot ──────────────────────────────────────────────────────
-    # Temporarily removed from the Portal — needs more work. Re-enable by
-    # restoring the entry in _nav_options / _DATA_TABS / the sidebar guard above
-    # and uncommenting the block below.
-    #
-    # if _page == "Recycling Economy Snapshot (Beta 🧪)":
-    #     from visualizations.mass_balance_sankey import render_economy_snapshot_tab
-    #     _mining_refining_df2 = _load_mining_refining()
-    #     _recycle_src2 = "AUTO" if not ADVANCED else _mining_pref
-    #     render_economy_snapshot_tab(
-    #         baci_df         = baci_df,
-    #         mining_df       = _mining_refining_df2,
-    #         region_map      = REGION_MAP,
-    #         regions_ordered = REGIONS_ORDERED,
-    #         active_years    = active_years,
-    #         dataset         = _dataset_key,
-    #         pb_factors      = pb_factors,
-    #         mining_source   = _recycle_src2,
-    #         advanced        = ADVANCED,
-    #     )
+
+    if _page == "Recycling Economy Snapshot (Beta 🧪)":
+        from visualizations.mass_balance_sankey import render_economy_snapshot_tab
+        _mining_refining_df2 = _load_mining_refining()
+        _recycle_src2 = "AUTO" if not ADVANCED else _mining_pref
+        render_economy_snapshot_tab(
+            baci_df         = baci_df,
+            mining_df       = _mining_refining_df2,
+            region_map      = REGION_MAP,
+            regions_ordered = REGIONS_ORDERED,
+            active_years    = active_years,
+            dataset         = _dataset_key,
+            pb_factors      = pb_factors,
+            mining_source   = _recycle_src2,
+            advanced        = ADVANCED,
+        )
 
     _easy_assumptions_footer()
 
