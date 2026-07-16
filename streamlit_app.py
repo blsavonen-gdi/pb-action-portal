@@ -484,11 +484,13 @@ with _hdr_txt:
     )
 
 # ── Top navigation (one flat level of tabs) ───────────────────────────────
-_nav_options = ["Trade Map", "Trade Trends", "Trade Relationships", "Lead Accumulation", "Production & Capacity", "Recycling Economy Snapshot (Beta 🧪)", "Material Flow (Beta 🧪)", "Literature Stats"]
+# "Recycling Economy Snapshot (Beta 🧪)" temporarily removed from nav — needs more work.
+_nav_options = ["Trade Map", "Trade Trends", "Trade Relationships", "Lead Accumulation", "Production & Capacity", "Material Flow (Beta 🧪)", "Literature Stats"]
 
 # The seven data tabs share the same sidebar controls + data prep; Literature
 # Stats is standalone.
-_DATA_TABS = ("Trade Map", "Trade Trends", "Trade Relationships", "Production & Capacity", "Lead Accumulation", "Recycling Economy Snapshot (Beta 🧪)", "Material Flow (Beta 🧪)")
+# "Recycling Economy Snapshot (Beta 🧪)" temporarily removed — needs more work.
+_DATA_TABS = ("Trade Map", "Trade Trends", "Trade Relationships", "Production & Capacity", "Lead Accumulation", "Material Flow (Beta 🧪)")
 
 # If a persisted selection is no longer valid, fall back to the first tab.
 if st.session_state.get("toolkit_page") not in _nav_options:
@@ -1805,7 +1807,8 @@ def _make_choropleth(
 
 
 
-if _page in ("Production & Capacity", "Lead Accumulation", "Recycling Economy Snapshot (Beta 🧪)", "Material Flow (Beta 🧪)"):
+# "Recycling Economy Snapshot (Beta 🧪)" temporarily removed — needs more work.
+if _page in ("Production & Capacity", "Lead Accumulation", "Material Flow (Beta 🧪)"):
 
     # ── Production & Capacity ─────────────────────────────────────────────────
 
@@ -2323,22 +2326,25 @@ if _page in ("Production & Capacity", "Lead Accumulation", "Recycling Economy Sn
 
 
     # ── Economy Snapshot ──────────────────────────────────────────────────────
-
-    if _page == "Recycling Economy Snapshot (Beta 🧪)":
-        from visualizations.mass_balance_sankey import render_economy_snapshot_tab
-        _mining_refining_df2 = _load_mining_refining()
-        _recycle_src2 = "AUTO" if not ADVANCED else _mining_pref
-        render_economy_snapshot_tab(
-            baci_df         = baci_df,
-            mining_df       = _mining_refining_df2,
-            region_map      = REGION_MAP,
-            regions_ordered = REGIONS_ORDERED,
-            active_years    = active_years,
-            dataset         = _dataset_key,
-            pb_factors      = pb_factors,
-            mining_source   = _recycle_src2,
-            advanced        = ADVANCED,
-        )
+    # Temporarily removed from the Portal — needs more work. Re-enable by
+    # restoring the entry in _nav_options / _DATA_TABS / the sidebar guard above
+    # and uncommenting the block below.
+    #
+    # if _page == "Recycling Economy Snapshot (Beta 🧪)":
+    #     from visualizations.mass_balance_sankey import render_economy_snapshot_tab
+    #     _mining_refining_df2 = _load_mining_refining()
+    #     _recycle_src2 = "AUTO" if not ADVANCED else _mining_pref
+    #     render_economy_snapshot_tab(
+    #         baci_df         = baci_df,
+    #         mining_df       = _mining_refining_df2,
+    #         region_map      = REGION_MAP,
+    #         regions_ordered = REGIONS_ORDERED,
+    #         active_years    = active_years,
+    #         dataset         = _dataset_key,
+    #         pb_factors      = pb_factors,
+    #         mining_source   = _recycle_src2,
+    #         advanced        = ADVANCED,
+    #     )
 
     _easy_assumptions_footer()
 
