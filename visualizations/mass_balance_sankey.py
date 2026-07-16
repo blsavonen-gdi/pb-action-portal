@@ -31,6 +31,31 @@ _DATA_DIR = Path(__file__).parent.parent / "data"
 _MASTER_BACI_PATH = _DATA_DIR / "BACI_lead_trade_2012_2024_modified_vHS_4_master.csv"
 
 # ---------------------------------------------------------------------------
+# Plain-language explainer of the model equations (shared by the Material Flow
+# and Recycling Economy "Learn more" popovers). Deliberately written as word
+# equations with few symbols so a non-specialist can follow the chain.
+# The percentages are the fixed Easy-mode defaults.
+# ---------------------------------------------------------------------------
+EASY_MODEL_EQUATIONS_MD = (
+    "**The equations behind the numbers**\n\n"
+    "The model follows lead around the loop. At each step it takes the previous "
+    "quantity and multiplies it by a single rate or efficiency:\n\n"
+    "*Recycling — turning old batteries back into lead:*\n"
+    "- Used Batteries × Collection Rate = Collected Batteries\n"
+    "- Collected Batteries × Breaking Efficiency = Lead Scrap\n"
+    "- Lead Scrap × Smelting Efficiency = Recycled Lead\n\n"
+    "*Manufacturing — turning lead into new batteries:*\n"
+    "- Refined Lead × Battery Share = Lead for Batteries\n"
+    "- Lead for Batteries × Manufacturing Efficiency = New Battery Lead\n\n"
+    "*Trade adjustment at each stage:* Amount − Exports + Imports = Amount Available Locally\n\n"
+    "The model is anchored on each country's measured refined-lead production and works "
+    "outward in both directions from there. Every rate is an assumption: in **Easy mode** "
+    "they are fixed at these defaults — collection 95%, breaking 95%, smelting 97%, battery "
+    "share 85%, manufacturing 98% — and in **Advanced mode** you can adjust each one with the "
+    "sliders. Treat the outputs as indicative, not precise."
+)
+
+# ---------------------------------------------------------------------------
 # Metal-product HS codes (HS12 only)
 # ---------------------------------------------------------------------------
 _METAL_HS = {780411, 780419, 780420, 780600}
@@ -192,6 +217,57 @@ def _get_mining_row(
 # Sankey builder
 # ---------------------------------------------------------------------------
 
+# Divergence above which the two refined-lead sources are considered to
+# "not align" and the more plausible one is auto-selected (Easy mode only).
+_SOURCE_DIVERGENCE_THRESHOLD = 0.25
+
+
+def _resolve_mining_source(
+    m: dict[str, float],
+    requested: str,
+    country: str = "",
+) -> tuple[str, str | None]:
+    """Pick the more plausible refined-lead source for a country/year.
+
+    In Advanced mode `requested` is an explicit "BGS"/"USGS" and is returned
+    unchanged. In Easy mode `requested` is "AUTO": default to BGS (the longer,
+    more complete history), but when BGS and USGS both report refined lead yet
+    disagree by more than ``_SOURCE_DIVERGENCE_THRESHOLD``, prefer USGS — it
+    measures recycled (secondary) lead directly, whereas BGS reports only a
+    total that the model has to split via an ore-based estimate. Falls back to
+    whichever source has data.
+
+    Returns ``(effective_source, note_or_None)`` where the note is a plain-
+    language caption explaining any auto-switch.
+    """
+    if requested in ("BGS", "USGS"):
+        return requested, None
+
+    refined_bgs = m["refined_bgs"]
+    refined_usgs = m["refined_primary_usgs"] + m["refined_secondary_usgs"]
+    has_bgs = refined_bgs > 0
+    has_usgs = refined_usgs > 0
+
+    if has_bgs and has_usgs:
+        divergence = abs(refined_usgs - refined_bgs) / refined_bgs
+        if divergence > _SOURCE_DIVERGENCE_THRESHOLD:
+            return "USGS", (
+                f"Using **USGS** for {country}: it reports {_fmt(refined_usgs)} t refined "
+                f"lead vs BGS's {_fmt(refined_bgs)} t (a {divergence * 100:.0f}% gap). "
+                f"USGS measures recycled (secondary) lead directly, so it's the more "
+                f"plausible anchor here."
+            )
+        return "BGS", None
+
+    if has_usgs and not has_bgs:
+        return "USGS", (
+            f"Using **USGS** for {country}: no BGS refined-lead data for these years."
+        )
+
+    # Only BGS, or neither (the latter becomes a __no_refining__ warning later).
+    return "BGS", None
+
+
 def _fmt(v: float) -> str:
     """Format a tonnage value rounded to 2 significant figures, with commas."""
     import math
@@ -293,6 +369,9 @@ def build_sankey(
     # 2. Mining / refining anchor
     # ------------------------------------------------------------------
     m = _get_mining_row(mining_df, country, active_years, mining_source)
+
+    # Easy mode passes "AUTO": resolve to the more plausible source per country.
+    mining_source, source_note = _resolve_mining_source(m, mining_source, country)
 
     mined_bgs            = m["mined_bgs"]
     mined_usgs           = m["mined_usgs"]
@@ -403,6 +482,9 @@ def build_sankey(
         "imp_batt":  imp_batt,  "exp_batt":  exp_batt,
         "imp_metal": imp_metal, "exp_metal": exp_metal,
         "mined":     mined,
+        # Source resolution (Easy-mode auto-select)
+        "mining_source_effective": mining_source,
+        "mining_source_note":      source_note,
     }
 
     if warning_msg == "__no_refining__":
@@ -1034,6 +1116,9 @@ def render_mass_balance_sankey_tab(
         battery_lead_content_fraction = battery_lead_content_fraction,
     )
 
+    # Resolved source for display (Easy mode "AUTO" → the source actually used).
+    _eff_source = model_outputs.get("mining_source_effective", mining_source)
+
     with right_col:
         # Eurostat fallback warning
         if _want_eurostat and not _eurostat_available:
@@ -1041,7 +1126,7 @@ def render_mass_balance_sankey_tab(
                 f"Eurostat collection data not available for **{country}** "
                 f"in {min(active_years)}–{max(active_years) if len(active_years) > 1 else active_years[0]}. "
                 f"Eurostat covers EU/EFTA countries for years 2009–2023. "
-                f"Falling back to {mining_source} smelting anchor."
+                f"Falling back to {_eff_source} smelting anchor."
             )
 
         # Refining-hub note (only when Eurostat anchor is active)
@@ -1050,7 +1135,7 @@ def render_mass_balance_sankey_tab(
                 f"**{country}** is a major lead refining hub that processes batteries "
                 f"and bullion imported from outside the EU. The Eurostat anchor reflects "
                 f"domestically collected batteries only. Smelting output implied by this "
-                f"anchor will be lower than {mining_source} figures — the gap represents "
+                f"anchor will be lower than {_eff_source} figures — the gap represents "
                 f"non-EU feedstock flows visible in BACI HS 854810 (ULAB) and "
                 f"780199 (bullion) imports."
             )
@@ -1077,6 +1162,17 @@ def render_mass_balance_sankey_tab(
                 f"No flows above the {min_flow:,.0f} t threshold for **{country}** "
                 f"in the selected period. Try lowering the minimum flow threshold "
                 f"or selecting a different country or year range."
+            )
+
+        # Source-selection caption (Easy mode auto-select). When the two sources
+        # diverge the model switches to the more plausible one and says why.
+        _src_note = model_outputs.get("mining_source_note")
+        if _src_note:
+            st.caption(f"📊 {_src_note}")
+        elif mining_source == "AUTO":
+            st.caption(
+                f"📊 Mining/refining anchor: **{model_outputs.get('mining_source_effective', 'BGS')}** "
+                f"(BGS and USGS agree for {country})."
             )
 
     # ------------------------------------------------------------------
@@ -1288,7 +1384,12 @@ def render_economy_snapshot_tab(
             "material-flow equations as the Material Flow tab, but presented "
             "as a compact summary rather than a full Sankey. "
             "Use this tab to quickly compare countries or identify which stage "
-            "in the recycling loop is under-performing."
+            "in the recycling loop is under-performing.\n\n"
+            + EASY_MODEL_EQUATIONS_MD +
+            "\n\n**Which production source is used:** Anchored on measured refined-lead "
+            "production — BGS by default, switching to USGS (which measures recycled lead "
+            "directly) when the two sources disagree by more than 25%. Any switch is noted "
+            "under the charts."
         )
     # Eligible countries (same filter as Process Estimates)
     _refining_cols = ["refined_bgs_t", "refined_primary_usgs_t", "refined_secondary_usgs_t"]
@@ -1432,6 +1533,23 @@ def render_economy_snapshot_tab(
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info(f"No data for {country}.")
+
+    # Source-selection captions (Easy mode auto-select). One line per country
+    # whose refined-lead source was auto-switched away from the BGS default.
+    if mining_source == "AUTO":
+        _notes = [
+            all_outputs[c].get("mining_source_note")
+            for c in selected
+            if all_outputs[c].get("mining_source_note")
+        ]
+        if _notes:
+            for _n in _notes:
+                st.caption(f"📊 {_n}")
+        else:
+            st.caption(
+                "📊 Mining/refining anchor: **BGS** — BGS and USGS agree for the "
+                "selected countries."
+            )
 
     if global_norm and norm_max:
         st.caption(

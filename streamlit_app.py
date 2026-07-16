@@ -24,7 +24,10 @@ from model.regions import REGIONS_ORDERED, REGION_MAP, MAJOR_REGIONS_ORDERED, MA
 from visualizations.lead_accumulation import (
     render_lead_accumulation_tab, HS_META, CATEGORIES_ORDERED, _DEFAULT_OFF,
 )
-from visualizations.mass_balance_sankey import render_mass_balance_sankey_tab
+from visualizations.mass_balance_sankey import (
+    render_mass_balance_sankey_tab,
+    EASY_MODEL_EQUATIONS_MD as _EASY_MODEL_EQUATIONS_MD,
+)
 
 st.set_page_config(
     page_title="Pb Action Data Portal",
@@ -2292,15 +2295,18 @@ if _page in ("Production & Capacity", "Lead Accumulation", "Recycling Economy Sn
                     "**Experimental model.** Values are estimates derived from trade and "
                     "production data (BOTEC-type calculations) and are not reconciled against "
                     "external observations. Treat them as indicative, not precise.\n\n"
-                    "**How it's used:** The model chains five equations "
-                    "(collection → breaking → secondary smelting → manufacturing → "
-                    "installation) using BACI as the trade anchor and production data as "
-                    "the refining anchor. Process efficiencies (η) scale each stage.\n\n"
-                    "This tab covers many countries using a single forward pass with "
-                    "fixed parameters — treat the outputs as indicative, not calibrated."
+                    + _EASY_MODEL_EQUATIONS_MD +
+                    "\n\n**Which production source is used:** The model is anchored on each "
+                    "country's measured refined-lead production. It defaults to BGS, but when "
+                    "BGS and USGS disagree by more than 25% it switches to USGS — which measures "
+                    "recycled (secondary) lead directly — and notes the switch under the chart."
                 )
         _mining_refining_df = _load_mining_refining()
         _eurostat_df = _load_eurostat_collection()
+        # Easy mode auto-selects the more plausible refined-lead source per
+        # country (BGS default, USGS when the two diverge); Advanced respects
+        # the explicit sidebar choice.
+        _recycle_src = "AUTO" if not ADVANCED else _mining_pref
         render_mass_balance_sankey_tab(
             baci_df         = baci_df,
             mining_df       = _mining_refining_df,
@@ -2310,7 +2316,7 @@ if _page in ("Production & Capacity", "Lead Accumulation", "Recycling Economy Sn
             active_years    = active_years,
             dataset         = _dataset_key,
             pb_factors      = pb_factors,
-            mining_source   = _mining_pref,
+            mining_source   = _recycle_src,
             eurostat_df     = _eurostat_df,
             advanced        = ADVANCED,
         )
@@ -2321,6 +2327,7 @@ if _page in ("Production & Capacity", "Lead Accumulation", "Recycling Economy Sn
     if _page == "Recycling Economy Snapshot (Beta 🧪)":
         from visualizations.mass_balance_sankey import render_economy_snapshot_tab
         _mining_refining_df2 = _load_mining_refining()
+        _recycle_src2 = "AUTO" if not ADVANCED else _mining_pref
         render_economy_snapshot_tab(
             baci_df         = baci_df,
             mining_df       = _mining_refining_df2,
@@ -2329,7 +2336,7 @@ if _page in ("Production & Capacity", "Lead Accumulation", "Recycling Economy Sn
             active_years    = active_years,
             dataset         = _dataset_key,
             pb_factors      = pb_factors,
-            mining_source   = _mining_pref,
+            mining_source   = _recycle_src2,
             advanced        = ADVANCED,
         )
 
