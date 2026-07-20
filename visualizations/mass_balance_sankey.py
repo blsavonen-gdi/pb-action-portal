@@ -1254,7 +1254,17 @@ def _build_snapshot_radar(
         return None
 
     r_dom     = [v / peak for v in dom_vals]
-    hover_dom = [f"<b>{c}</b><br>{_fmt(v)} t Pb" for c, v in zip(cats, dom_vals)]
+
+    # Hover is expressed purely as a share of ULAB Collection — absolute
+    # tonnages are too unreliable to surface here.
+    def _pct_of_collection(v: float) -> str:
+        if ulab_dom <= 0:
+            return "n/a"
+        return f"{v / ulab_dom * 100:.0f}% of collection"
+
+    hover_dom = [
+        f"<b>{c}</b><br>{_pct_of_collection(v)}" for c, v in zip(cats, dom_vals)
+    ]
 
     tick_text = (
         [_fmt_tick(f * peak) for f in [0.25, 0.5, 0.75, 1.0]]
@@ -1282,7 +1292,7 @@ def _build_snapshot_radar(
         _bl_cats = ["Collection", "Breaking", "Sec. Smelting", "Manufacturing"]
         _bl_r    = [ulab_dom / peak] * 4
         _bl_hover = [
-            f"<b>{c}</b><br>Collection baseline: {_fmt(ulab_dom)} t Pb"
+            f"<b>{c}</b><br>Collection baseline (100% of collection)"
             for c in _bl_cats
         ]
         fig.add_trace(go.Scatterpolar(
